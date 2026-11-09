@@ -52,6 +52,38 @@ pub enum Origin {
     Type,
 }
 
+/// Where an `@unverified` marker may sit, outermost to innermost.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Scope {
+    /// The whole package.
+    Package,
+    /// A protocol in it.
+    Protocol,
+    /// A function of a protocol.
+    Function,
+    /// An argument of a function.
+    Argument,
+    /// A field of a type.
+    Field,
+    /// A type.
+    Type,
+}
+
+impl Scope {
+    /// As the catalog writes it: `package`, `protocol`, `function`,
+    /// `argument`, `field`, `type`.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Scope::Package => "package",
+            Scope::Protocol => "protocol",
+            Scope::Function => "function",
+            Scope::Argument => "argument",
+            Scope::Field => "field",
+            Scope::Type => "type",
+        }
+    }
+}
+
 /// Where an entry stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Status {
@@ -69,10 +101,21 @@ pub struct Guarantee {
     pub title: &'static str,
     pub description: &'static str,
     pub comes_from: Origin,
+    /// Where an `@unverified` marker acknowledging it may sit, outermost to
+    /// innermost.
+    pub scopes: &'static [Scope],
     pub status: Status,
     pub replaced_by: Option<&'static str>,
     /// The spec version that introduced it, where the changelog names one.
     pub since: Option<&'static str>,
+}
+
+impl Guarantee {
+    /// Whether an `@unverified` marker acknowledging this guarantee may sit
+    /// at `scope`.
+    pub fn allows_scope(&self, scope: Scope) -> bool {
+        self.scopes.contains(&scope)
+    }
 }
 
 /// One value a fact may take, and what it means.
@@ -224,6 +267,39 @@ mod tests {
             assert!(guarantee(g).is_some(), "{g}");
             assert!(f.allows("true") && f.allows("false"));
         }
+    }
+
+    #[test]
+    fn every_guarantee_has_scopes_in_order() {
+        let rank = |s: &Scope| sets::SCOPES.iter().position(|id| *id == s.as_str()).unwrap();
+        for g in GUARANTEES {
+            assert!(!g.scopes.is_empty(), "{}", g.id);
+            assert!(g.scopes.windows(2).all(|w| rank(&w[0]) < rank(&w[1])), "{}", g.id);
+            assert_eq!(g.comes_from == Origin::Type, g.allows_scope(Scope::Type), "{}", g.id);
+        }
+    }
+
+    #[test]
+    fn a_type_guarantee_reaches_below_the_protocol() {
+        let bounded = guarantee(guarantee::BOUNDED_SIZE).unwrap();
+        assert!(bounded.allows_scope(Scope::Field));
+        assert!(!bounded.allows_scope(Scope::Package));
+        let agreement = guarantee(guarantee::SCHEMA_AGREEMENT).unwrap();
+        assert!(agreement.allows_scope(Scope::Package) && agreement.allows_scope(Scope::Protocol));
+        assert!(!agreement.allows_scope(Scope::Field));
+    }
+
+    #[test]
+    fn scopes_match_their_set() {
+        let all = [
+            Scope::Package,
+            Scope::Protocol,
+            Scope::Function,
+            Scope::Argument,
+            Scope::Field,
+            Scope::Type,
+        ];
+        assert!(all.iter().map(|s| s.as_str()).eq(sets::SCOPES.iter().copied()));
     }
 
     #[test]

@@ -13,6 +13,12 @@ import "list"
 	}
 }
 
+// Where an `@unverified` marker may sit, outermost to innermost: the
+// package, a protocol in it, a function of the protocol, one of its
+// arguments, a field of a type, a type.
+#Scopes: ["package", "protocol", "function", "argument", "field", "type"]
+#Scope: or(#Scopes)
+
 // A guarantee Comline gives between peers, which a protocol can give up
 // with `@unverified`. Its id is the name written in `accept_unverified`,
 // diagnostics and generated docs.
@@ -23,6 +29,9 @@ import "list"
 	// What gives it up: the handshake, the format and framing, a handshake
 	// policy, or a type.
 	comes_from!: "handshake" | "encoding" | "policy" | "type"
+	// Where an `@unverified` marker acknowledging it may sit, which follows
+	// from where its cause is. In `#Scopes` order, each at most once.
+	scopes!: [#Scope, ...#Scope]
 })
 
 // A fact an encoding's profile states, with every value it may take and
@@ -73,6 +82,18 @@ guarantees: {[=~#SnakeId]: #Guarantee, [!~#SnakeId]: _|_}
 facts: {[=~#SnakeId]: #Fact, [!~#SnakeId]: _|_}
 encodings: {[=~#EncodingId]: #Encoding, [!~#EncodingId]: _|_}
 features: {[=~#FeatureId]: #Feature, [!~#FeatureId]: _|_}
+
+// A guarantee's scopes follow from where it comes from: what a type gives
+// up can be acknowledged on the type, or on whatever uses it, down from the
+// protocol; what the handshake, the policies and the encoding give up is
+// settled by the package and its protocols, never below a protocol.
+_scope_rank: {for i, s in #Scopes {(s): i}}
+_scopes_are_ordered: [for id, g in guarantees
+	let ranks = [for s in g.scopes {_scope_rank[s]}]
+	if len([for i, r in ranks if i > 0 if r <= ranks[i-1] {i}]) > 0 {id}] & []
+_scopes_follow_origin: [for id, g in guarantees
+	let inner = [for s in g.scopes if _scope_rank[s] >= _scope_rank["function"] {s}]
+	if (g.comes_from == "type" && !list.Contains(g.scopes, "type")) || (g.comes_from != "type" && len(inner) > 0) {id}] & []
 
 // A handshake's facts are booleans.
 _boolean_handshake_facts: [for id, f in facts if f.applies_to == "handshake" if [for v, _ in f.values {v}] != ["true", "false"] {id}] & []

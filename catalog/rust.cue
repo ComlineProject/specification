@@ -34,6 +34,14 @@ _rust: {
 		#in: "format" | "framing" | "handshake"
 		out: {format: "Kind::Format", framing: "Kind::Framing", handshake: "Kind::Handshake"}[#in]
 	}
+	scope: {
+		#in: #Scope
+		out: {package: "Scope::Package", protocol: "Scope::Protocol", function: "Scope::Function", argument: "Scope::Argument", field: "Scope::Field", type: "Scope::Type"}[#in]
+	}
+	scopes: {
+		#in: [...#Scope]
+		out: "&[" + strings.Join([for s in #in {(scope & {#in: s}).out}], ", ") + "]"
+	}
 	status: {
 		#in: "stable" | "experimental" | "deprecated"
 		out: {stable: "Status::Stable", experimental: "Status::Experimental", deprecated: "Status::Deprecated"}[#in]
@@ -80,7 +88,7 @@ _set: {
 rust_catalog: """
 	// Generated from the catalog's CUE by `specs/check.sh`: don't edit by hand.
 
-	use crate::{Encoding, Fact, Feature, Guarantee, Kind, Origin, Status, Value};
+	use crate::{Encoding, Fact, Feature, Guarantee, Kind, Origin, Scope, Status, Value};
 
 	pub const SPEC_VERSION: &str = \((_rust.str & {#in: _spec_version}).out);
 
@@ -92,6 +100,7 @@ rust_catalog: """
 				title: \((_rust.str & {#in: g.title}).out),
 				description: \((_rust.str & {#in: g.description}).out),
 				comes_from: \({handshake: "Origin::Handshake", encoding: "Origin::Encoding", policy: "Origin::Policy", type: "Origin::Type"}[g.comes_from]),
+				scopes: \((_rust.scopes & {#in: g.scopes}).out),
 		\((_rust.lifecycle & {#in: g}).out)
 			},
 		"""}], "\n"))
@@ -165,6 +174,7 @@ rust_catalog: """
 	/// The catalog's sets.
 	pub mod sets {
 	\((_set & {#name: "GUARANTEES", #in: sets.guarantees}).out)
+	\((_set & {#name: "SCOPES", #in: sets.scopes}).out)
 	\((_set & {#name: "FORMATS", #in: sets.formats}).out)
 	\((_set & {#name: "FRAMINGS", #in: sets.framings}).out)
 	\((_set & {#name: "HANDSHAKES", #in: sets.handshakes}).out)
