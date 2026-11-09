@@ -50,8 +50,8 @@ A third party's encoding isn't an entry here: its package declares it in
 ## Changing it
 
 Edit the `.cue` files, then run `specs/check.sh` to regenerate
-`features.json`, `gen/catalog.json` and `rust/src/catalog.rs`. CI runs `specs/check.sh --check`,
-which fails when any of them is stale.
+`features.json`, `gen/catalog.json` and `rust/src/catalog.rs`. CI runs
+`specs/check.sh --check`, which fails when any of them is stale.
 
 Order matters where it shows: facts are listed in the order profiles list
 them, and features in the order `features.json` does.
