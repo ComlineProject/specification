@@ -23,6 +23,15 @@ What an entry may say, and the rules across entries, are in
   (`frozen_as`: `jsonrpc`, `datagram`), that spelling is an alias too.
 - A reference (`establishes`, `feature`) names an entry that exists.
 - A handshake's facts are booleans.
+- A guarantee's `scopes` say where an `@unverified` marker acknowledging it
+  may sit: any of `package`, `protocol`, `function`, `argument`, `field` and
+  `type`, outermost to innermost, each at most once. They follow from where
+  its cause is: what the handshake, a policy or the encoding gives up
+  (`schema_agreement`, `version_honesty`, `encoding_conformance`, ...) is
+  settled for a package or a protocol, so those are its scopes; what a type
+  gives up (`bounded_size`) can also be acknowledged on a function, an
+  argument, a field or the type itself, and must include `type`. The schema
+  checks both, and `sets.scopes` lists the vocabulary.
 - `since` is the spec version that introduced an entry, where the changelog
   names one.
 

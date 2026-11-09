@@ -1,6 +1,6 @@
 // Generated from the catalog's CUE by `specs/check.sh`: don't edit by hand.
 
-use crate::{Encoding, Fact, Feature, Guarantee, Kind, Origin, Status, Value};
+use crate::{Encoding, Fact, Feature, Guarantee, Kind, Origin, Scope, Status, Value};
 
 pub const SPEC_VERSION: &str = r#"0.10"#;
 
@@ -11,6 +11,7 @@ pub const GUARANTEES: &[Guarantee] = &[
         title: r#"schema agreement"#,
         description: r#"Both ends were built from compatible schemas, which the handshake checks."#,
         comes_from: Origin::Handshake,
+        scopes: &[Scope::Package, Scope::Protocol],
         status: Status::Stable,
         replaced_by: None,
         since: None,
@@ -20,6 +21,7 @@ pub const GUARANTEES: &[Guarantee] = &[
         title: r#"encoding agreement"#,
         description: r#"Both ends use the same format and framing, which the handshake checks."#,
         comes_from: Origin::Handshake,
+        scopes: &[Scope::Package, Scope::Protocol],
         status: Status::Stable,
         replaced_by: None,
         since: None,
@@ -29,6 +31,7 @@ pub const GUARANTEES: &[Guarantee] = &[
         title: r#"encoding conformance"#,
         description: r#"An implementation encodes what its name promises, proven by conformance vectors."#,
         comes_from: Origin::Encoding,
+        scopes: &[Scope::Package, Scope::Protocol],
         status: Status::Stable,
         replaced_by: None,
         since: None,
@@ -38,6 +41,7 @@ pub const GUARANTEES: &[Guarantee] = &[
         title: r#"version honesty"#,
         description: r#"A version bump says what the change breaks, as the version comparison works it out."#,
         comes_from: Origin::Policy,
+        scopes: &[Scope::Package, Scope::Protocol],
         status: Status::Stable,
         replaced_by: None,
         since: None,
@@ -47,6 +51,7 @@ pub const GUARANTEES: &[Guarantee] = &[
         title: r#"bounded size"#,
         description: r#"Every value has a maximum size, so a decoder refuses an oversized one before allocating it."#,
         comes_from: Origin::Type,
+        scopes: &[Scope::Protocol, Scope::Function, Scope::Argument, Scope::Field, Scope::Type],
         status: Status::Stable,
         replaced_by: None,
         since: None,
@@ -503,6 +508,7 @@ pub mod feature {
 /// The catalog's sets.
 pub mod sets {
     pub const GUARANTEES: &[&str] = &[r#"schema_agreement"#, r#"encoding_agreement"#, r#"encoding_conformance"#, r#"version_honesty"#, r#"bounded_size"#];
+    pub const SCOPES: &[&str] = &[r#"package"#, r#"protocol"#, r#"function"#, r#"argument"#, r#"field"#, r#"type"#];
     pub const FORMATS: &[&str] = &[r#"packed@1"#, r#"json@1"#, r#"msgpack@1"#];
     pub const FRAMINGS: &[&str] = &[r#"jsonrpc@1"#, r#"datagram@1"#, r#"datagram@2"#, r#"datagram@3"#];
     pub const HANDSHAKES: &[&str] = &[r#"comline@1"#, r#"comline@2"#, r#"none"#];
