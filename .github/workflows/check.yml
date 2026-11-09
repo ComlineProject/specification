@@ -11,7 +11,7 @@ jobs:
     name: specs
     runs-on: ubuntu-latest
     env:
-      # Keep in step with specs/cue.mod/module.cue.
+      # Keep in step with cue.mod/module.cue.
       CUE_VERSION: v0.17.1
     steps:
       - uses: actions/checkout@v4
