@@ -176,7 +176,6 @@ rust_catalog: """
 	];
 
 	\(strings.Join([for id, e in encodings if e.sizes != _|_ {(_rust.sizes & {#name: "SIZES_" + (_rust.const & {#in: id}).out, #in: e.sizes}).out + "\n"}], "\n"))
-	\(strings.Join([for id, e in encodings if e.sizes != _|_ {(_rust.sizes & {#name: "SIZES_" + (_rust.const & {#in: id}).out, #in: e.sizes}).out + "\n"}], "\n"))
 	/// Every official encoding, by its wire name.
 	pub const ENCODINGS: &[Encoding] = &[
 	\(strings.Join([for id, e in encodings {"""
