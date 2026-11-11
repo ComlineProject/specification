@@ -32,6 +32,9 @@ will read it.
 - `vectors/<feature>.json`: that feature's cases.
 - [`benches/`](benches/README.md): the benchmarks every runtime runs, in the
   same value encoding.
+- [`compiler/`](compiler/readme.md): compiler conformance cases, schema
+  graphs with the guarantees they give up and the diagnostics a build must
+  report, for a compiler or any tool that judges a package.
 - [`specs/`](specs/readme.md): the format of each of these files, in CUE, and
   the JSON Schemas generated from it, which each file names in `$schema`.
 
@@ -421,6 +424,9 @@ Whether a one-way call gets a reply frame is behaviour, not bytes, so no
 profile states it until live cross-runtime calls can prove it (see below).
 
 ## Implementing the spec
+
+A compiler or another tool that judges packages vendors `compiler/cases/`
+instead, and runs it as [`compiler/readme.md`](compiler/readme.md) says.
 
 Vendor `features.json`, `vectors/` and `profiles/` at a pinned commit of this
 repository, and `specs/gen/` too if you want their `$schema` to resolve; a
