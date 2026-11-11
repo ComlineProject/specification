@@ -92,7 +92,7 @@ groups: bounded: {
 		about: "a type that contains itself without @max_depth is an error"
 		packages: app: schemas: api: """
 			struct Node {
-			    optional next: Node
+			    kids: Node[max 4]
 			}
 
 			protocol P {
@@ -108,7 +108,7 @@ groups: bounded: {
 			config: [_allow]
 			schemas: api: """
 				struct Node {
-				    optional next: Node
+				    kids: Node[max 4]
 				}
 
 				@unverified = "trees are small in practice"
@@ -132,7 +132,7 @@ groups: bounded: {
 		packages: app: schemas: api: """
 			@max_depth = 4
 			struct Node {
-			    optional next: Node
+			    kids: Node[max 4]
 			}
 
 			protocol P {
