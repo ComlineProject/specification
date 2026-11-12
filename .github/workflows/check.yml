@@ -5,52 +5,73 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# A newer push to the same pull request supersedes this run; a branch's runs
+# queue instead.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Container jobs default to `sh`; the steps are bash.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # Every file matches its spec, and the generated schemas match the specs.
+  # In the org's CI tools image, which has cue (v0.17.1) and jq; harden-runner
+  # is for VM jobs.
   specs:
     name: specs
-    runs-on: ubuntu-latest
-    env:
-      # Keep in step with cue.mod/module.cue.
-      CUE_VERSION: v0.17.1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container: ghcr.io/comlineproject/ci-tools@sha256:b9301f9caf3e47f0b839de85efda178f698a55daf7fc387b463adeec93ecd433
     steps:
-      - uses: actions/checkout@v4
-      # The release download fails now and then (GitHub answering 504), so
-      # cue is cached per version, and fetched with retries only on a miss.
-      - name: Cache cue
-        id: cue-cache
-        uses: actions/cache@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: ~/.local/cue
-          key: cue-${{ env.CUE_VERSION }}-linux-amd64
-      - name: Install cue
-        if: steps.cue-cache.outputs.cache-hit != 'true'
-        # To a file, not piped into tar: a retry would append to a half-read
-        # stream.
+          persist-credentials: false
+      # The image's cue is the version the module declares: a bump of one
+      # without the other fails here.
+      - name: cue is the version cue.mod/module.cue declares
         run: |
-          mkdir -p ~/.local/cue
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o cue.tar.gz \
-            "https://github.com/cue-lang/cue/releases/download/$CUE_VERSION/cue_${CUE_VERSION}_linux_amd64.tar.gz"
-          tar -xzf cue.tar.gz -C ~/.local/cue cue
-          rm cue.tar.gz
-      - run: echo "$HOME/.local/cue" >> "$GITHUB_PATH"
+          declared=$(sed -n 's/^[[:space:]]*version: "\(.*\)"$/\1/p' cue.mod/module.cue)
+          [ -n "$declared" ]
+          cue version | grep -Fx "cue version $declared"
       - run: specs/check.sh --check
       - name: VERSION is a spec version
         run: grep -Eqx '[0-9]+\.[0-9]+' VERSION
 
   # The comline-catalog crate (rust/): its tests, its minimum Rust, and a
   # no_std build. specs/check.sh above keeps its generated data current.
+  # Not in the image: it has neither clippy, nor the wasm target, nor the
+  # minimum Rust, so the exact toolchains come from dtolnay/rust-toolchain.
   rust:
     name: rust crate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     defaults:
       run:
+        shell: bash
         working-directory: rust
     steps:
-      - uses: actions/checkout@v4
-      - run: rustup toolchain install stable 1.82.0 --profile minimal --component clippy
-      - run: rustup target add wasm32-unknown-unknown --toolchain stable
-      - run: cargo +stable test
-      - run: cargo +stable clippy --all-targets -- -D warnings
+      - uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The crate's minimum supported Rust (`rust-version` in Cargo.toml).
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: 1.82.0
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: 1.99.1
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - run: cargo +1.99.1 test
+      - run: cargo +1.99.1 clippy --all-targets -- -D warnings
       - run: cargo +1.82.0 check
-      - run: cargo +stable build --target wasm32-unknown-unknown
+      - run: cargo +1.99.1 build --target wasm32-unknown-unknown
