@@ -32,7 +32,9 @@ hold exactly what the catalog names, and, with [`jq`](https://jqlang.github.io/j
 size vectors: every rule lists cases that exist and show it, every case proves
 a rule, and every witness is as long as its case says. It generates
 `../compiler/cases/` from `../compiler/src/` (the [compiler cases](../compiler/readme.md)),
-and, with [`compiler.jq`](compiler.jq), holds them to what their schema can't say. CI runs `./check.sh --check`, which fails
+and, with [`compiler.jq`](compiler.jq), holds them to what their schema can't say.
+It also holds each framing's `protocol` fact to the cases it names
+([`protocol.jq`](protocol.jq)). CI runs `./check.sh --check`, which fails
 instead when a generated file is stale. It needs
 [`cue`](https://cuelang.org) at the version `.github/workflows/check.yml`
 pins.
