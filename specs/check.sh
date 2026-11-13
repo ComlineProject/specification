@@ -131,6 +131,21 @@ for file in ../profiles/*.json; do
     fi
 done
 
+# A framing's `protocol` is shown by its cases: `named` by requests whose bytes
+# hold the protocol's number, `unnamed` by requests that give none
+# (`specs/protocol.jq`).
+for file in ../profiles/*.json; do
+    [ "$(jq -r '.kind' "$file")" = framing ] || continue
+    if ! problems=$(jq -s -r --slurpfile profile "$file" -f protocol.jq ../vectors/framing-*.json); then
+        echo "$file or the framing vectors can't be read as a protocol fact and vectors" >&2
+        failed=1
+    elif [ -n "$problems" ]; then
+        echo "$file's protocol isn't proven by its vectors:" >&2
+        echo "$problems" >&2
+        failed=1
+    fi
+done
+
 # Not the schema the benches ship with.
 vet Bench $(ls ../benches/*.json | grep -v '/bench\.schema\.json$')
 vet Features ../features.json
