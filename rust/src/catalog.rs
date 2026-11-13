@@ -377,7 +377,7 @@ pub const ENCODINGS: &[Encoding] = &[
     Encoding {
         id: r#"datagram@1"#,
         kind: Kind::Framing,
-        title: r#"datagram"#,
+        title: r#"datagram@1"#,
         description: r#"Comline's own binary framing of requests and responses."#,
         aliases: &[r#"datagram"#, r#"comline.datagram"#],
         frozen_as: Some(r#"datagram"#),
