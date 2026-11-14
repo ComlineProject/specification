@@ -135,6 +135,7 @@ cases with `dependencies`, which are in `acceptance` and `chain`.
 | `package` | `unverified` in `config.idp`: the keyed and plain forms covering what a protocol takes from the package's settings; a protocol with its own `@handshake` not covered; `unverified::wrong-scope` for `bounded_size`; a guarantee no protocol gives up through it; the gate; a marker adding `bounded_size` |
 | `bounded` | `bounded_size`: a string or list without a maximum, a type that contains itself without `@max_depth`, a type from another schema of the package that holds one, each unmarked (an error) and marked (given up), and the bounded variants |
 | `acceptance` | a dependency's unverified protocols accepted under it in `config.idp`: not at all, exactly, for less, for more; the reasons the consumer is shown; the dependency judged by its own package |
+| `imports` | where a `use` path starts: a package's own schemas only through `package::`, `parent::` or `self::` (a bare path to one is `import::bare-own-schema-path`, in each form of a `use`), a dependency's and `std`'s paths as they were, a path matching nothing (`import::unresolved`), a schema named like a dependency, and the names a dependency can't have |
 | `chain` | three packages, `c` depending on `b` depending on `a`: a type holding `a`'s unbounded value, used in `c`; and the acceptance resolving `b` asks for `a`'s protocols too |
 
 A case's `description` says what it shows. Each rule has a passing and a
@@ -143,6 +144,10 @@ failing variant.
 ### To come
 
 Cases for rules core doesn't implement yet, which go in when it does:
+a `group` on a dependency's entry and the same package regrouped, and a kind of case for
+formatting imports (
+[specification#11](https://github.com/ComlineProject/specification/issues/11),
+after core#284),
 acknowledgements at the inner scopes (function, argument, field and type),
 an outer scope covering an inner one, `strict`, pinning an acceptance to a
 chain of packages and its invalidation, and failing closed.
