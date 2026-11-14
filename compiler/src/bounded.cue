@@ -153,7 +153,7 @@ groups: bounded: {
 			schemas: {
 				models: _models
 				api: """
-					use models::Blob
+					use package::models::Blob
 
 					protocol Orders {
 					    function send(b: Blob);
@@ -171,7 +171,7 @@ groups: bounded: {
 			schemas: {
 				models: _models
 				api: """
-					use models::Blob
+					use package::models::Blob
 
 					@unverified = "orders carry the upload"
 					protocol Orders {
@@ -205,7 +205,7 @@ groups: bounded: {
 				}
 				"""
 			api: """
-				use models::Blob
+				use package::models::Blob
 
 				protocol Orders {
 				    function send(b: Blob);
