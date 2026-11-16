@@ -65,12 +65,29 @@ _refBilling: """
 	}
 	"""
 
-// The decoy: another `Invoice`, in a schema that sorts before `billing`.
+// The decoy: another `Invoice`, in a schema that sorts before `billing`. Its
+// string has no maximum, so the schema builds on its own only because its own
+// marked protocol reaches the type and gives bounded size up (a position no
+// protocol reaches has to be bounded); the protocol is in the expected
+// outcome of every case. A spelling that wrongly reaches it from an unmarked
+// protocol is `bounds::unbounded`.
+_refDumps: "the archive keeps what it is given"
 _refArchive: """
 	struct Invoice {
 	    data: string
 	}
+
+	@unverified = "\(_refDumps)"
+	protocol Dump {
+	    function put(i: Invoice);
+	}
 	"""
+
+// What the decoy's package expects of `Dump`, beside `Orders`.
+_refDump: {
+	given_up: ["bounded_size"]
+	acknowledged: bounded_size: {scope: "protocol", reason: _refDumps}
+}
 
 _refGreeting: """
 	struct Greeting {
@@ -377,60 +394,98 @@ groups: references: {
 	// which an unmarked protocol using it can't give up.
 	"resolved-item": {
 		about: "use package::billing::api::Invoice, then Invoice, reaches billing::api::Invoice"
-		packages: app: schemas: {
-			"archive":     _refArchive
-			"billing/api": _refBilling
-			"api":         "use package::billing::api::Invoice\n\n" + (_refOrders & {_ref: "Invoice"}).text
+		packages: app: {
+			config: [_allow]
+			schemas: {
+				"archive":     _refArchive
+				"billing/api": _refBilling
+				"api":         "use package::billing::api::Invoice\n\n" + (_refOrders & {_ref: "Invoice"}).text
+			}
 		}
 		build: "app"
-		expect: {builds: true, protocols: Orders: given_up: [], warnings: []}
+		expect: {
+			builds: true
+			protocols: {Dump: _refDump, Orders: given_up: []}
+			warnings: ["unverified::bounded-size"]
+		}
 	}
 	"resolved-namespace": {
 		about: "use package::billing::api, then api::Invoice, reaches billing::api::Invoice"
-		packages: app: schemas: {
-			"archive":     _refArchive
-			"billing/api": _refBilling
-			"api":         "use package::billing::api\n\n" + (_refOrders & {_ref: "api::Invoice"}).text
+		packages: app: {
+			config: [_allow]
+			schemas: {
+				"archive":     _refArchive
+				"billing/api": _refBilling
+				"api":         "use package::billing::api\n\n" + (_refOrders & {_ref: "api::Invoice"}).text
+			}
 		}
 		build: "app"
-		expect: {builds: true, protocols: Orders: given_up: [], warnings: []}
+		expect: {
+			builds: true
+			protocols: {Dump: _refDump, Orders: given_up: []}
+			warnings: ["unverified::bounded-size"]
+		}
 	}
 	"resolved-descent": {
 		about: "use package::billing, then billing::api::Invoice, reaches billing::api::Invoice"
-		packages: app: schemas: {
-			"archive":     _refArchive
-			"billing/api": _refBilling
-			"api":         "use package::billing\n\n" + (_refOrders & {_ref: "billing::api::Invoice"}).text
+		packages: app: {
+			config: [_allow]
+			schemas: {
+				"archive":     _refArchive
+				"billing/api": _refBilling
+				"api":         "use package::billing\n\n" + (_refOrders & {_ref: "billing::api::Invoice"}).text
+			}
 		}
 		build: "app"
-		expect: {builds: true, protocols: Orders: given_up: [], warnings: []}
+		expect: {
+			builds: true
+			protocols: {Dump: _refDump, Orders: given_up: []}
+			warnings: ["unverified::bounded-size"]
+		}
 	}
 	"resolved-alias": {
 		about: "use package::billing::api as b, then b::Invoice, reaches billing::api::Invoice"
-		packages: app: schemas: {
-			"archive":     _refArchive
-			"billing/api": _refBilling
-			"api":         "use package::billing::api as b\n\n" + (_refOrders & {_ref: "b::Invoice"}).text
+		packages: app: {
+			config: [_allow]
+			schemas: {
+				"archive":     _refArchive
+				"billing/api": _refBilling
+				"api":         "use package::billing::api as b\n\n" + (_refOrders & {_ref: "b::Invoice"}).text
+			}
 		}
 		build: "app"
-		expect: {builds: true, protocols: Orders: given_up: [], warnings: []}
+		expect: {
+			builds: true
+			protocols: {Dump: _refDump, Orders: given_up: []}
+			warnings: ["unverified::bounded-size"]
+		}
 	}
 	"resolved-full-path": {
 		about: "package::billing::api::Invoice with no use reaches billing::api::Invoice"
-		packages: app: schemas: {
-			"archive":     _refArchive
-			"billing/api": _refBilling
-			"api":         (_refOrders & {_ref: "package::billing::api::Invoice"}).text
+		packages: app: {
+			config: [_allow]
+			schemas: {
+				"archive":     _refArchive
+				"billing/api": _refBilling
+				"api":         "" + (_refOrders & {_ref: "package::billing::api::Invoice"}).text
+			}
 		}
 		build: "app"
-		expect: {builds: true, protocols: Orders: given_up: [], warnings: []}
+		expect: {
+			builds: true
+			protocols: {Dump: _refDump, Orders: given_up: []}
+			warnings: ["unverified::bounded-size"]
+		}
 	}
 	"resolved-decoy": {
 		about: "use package::archive, then archive::Invoice, reaches the unbounded Invoice, which an unmarked protocol can't use: the other cases reached billing's"
-		packages: app: schemas: {
-			"archive":     _refArchive
-			"billing/api": _refBilling
-			"api":         "use package::archive\n\n" + (_refOrders & {_ref: "archive::Invoice"}).text
+		packages: app: {
+			config: [_allow]
+			schemas: {
+				"archive":     _refArchive
+				"billing/api": _refBilling
+				"api":         "use package::archive\n\n" + (_refOrders & {_ref: "archive::Invoice"}).text
+			}
 		}
 		build: "app"
 		expect: {builds: false, errors: ["bounds::unbounded"]}
