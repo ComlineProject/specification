@@ -136,10 +136,25 @@ cases with `dependencies`, which are in `acceptance` and `chain`.
 | `bounded` | `bounded_size`: a string or list without a maximum, a type that contains itself without `@max_depth`, a type from another schema of the package that holds one, each unmarked (an error) and marked (given up), and the bounded variants |
 | `acceptance` | a dependency's unverified protocols accepted under it in `config.idp`: not at all, exactly, for less, for more; the reasons the consumer is shown; the dependency judged by its own package |
 | `imports` | where a `use` path starts: a package's own schemas only through `package::`, `parent::` or `self::` (a bare path to one is `import::bare-own-schema-path`, in each form of a `use`), a dependency's and `std`'s paths as they were, a path matching nothing (`import::unresolved`), a schema named like a dependency, and the names a dependency can't have |
+| `references` | how a type is named once imported, the Rust model: a whole-namespace `use` brings in only its name (`types::User`, and a bare `User` is `reference::not-in-scope`); a `use` of an item, `{...}` or `*` brings in the names it lists (and `types::User` after it is `reference::qualifier-not-in-scope`); a full path (`package::`, `parent::`, `self::`, `std::`, a dependency's) in a type position with no `use`; a path going down from a name in scope; each spelling reaching the same type, and a package written before the rule unchanged |
 | `chain` | three packages, `c` depending on `b` depending on `a`: a type holding `a`'s unbounded value, used in `c`; and the acceptance resolving `b` asks for `a`'s protocols too |
 
-A case's `description` says what it shows. Each rule has a passing and a
-failing variant.
+A case's `description` says what it shows, and for a refused reference the
+fix its diagnostic carries (a case holds a compiler to the code and severity,
+not to the fix). The `reference` codes, in
+[the proposal](https://github.com/ComlineProject/docs/blob/main/docs/docs/proposals/use-paths-and-groups/relative-use.md#qualified-references):
+
+| Code | When | Fix |
+| --- | --- | --- |
+| `reference::not-in-scope` | a bare name no `use` or declaration of the file brought in: `User` after only `use package::types` | add `use package::types::User`, or write `types::User` |
+| `reference::qualifier-not-in-scope` | a qualified reference whose first segment is not a name in scope or a root: `types::User` after `use package::types::User` | write `User` (or add the `use` that brings the qualifier in) |
+
+Each rule has a passing and a failing variant.
+
+The `references` group is ahead of core: its outcomes are those of the
+[decision](https://github.com/ComlineProject/docs/blob/main/docs/docs/proposals/use-paths-and-groups/relative-use.md#qualified-references),
+which [core#290](https://github.com/ComlineProject/core/issues/290)
+implements, and core's runner fails them until then.
 
 ### To come
 
