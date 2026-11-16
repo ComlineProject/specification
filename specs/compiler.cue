@@ -106,6 +106,9 @@ import "github.com/comlineproject/specification/catalog"
 	close({code!: "settings::forbidden", severity!: "error"}),
 	close({code!: "import::bare-own-schema-path", severity!: "error"}),
 	close({code!: "import::unresolved", severity!: "error"}),
+	close({code!: "reference::not-in-scope", severity!: "error"}),
+	close({code!: "reference::qualifier-not-in-scope", severity!: "error"}),
+	close({code!: "reference::defined-twice", severity!: "error"}),
 ])
 
 #CompilerWarning: or([
