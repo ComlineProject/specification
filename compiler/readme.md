@@ -136,7 +136,7 @@ cases with `dependencies`, which are in `acceptance` and `chain`.
 | `bounded` | `bounded_size`: a string or list without a maximum, a type that contains itself without `@max_depth`, a type from another schema of the package that holds one, each unmarked (an error) and marked (given up), and the bounded variants |
 | `acceptance` | a dependency's unverified protocols accepted under it in `config.idp`: not at all, exactly, for less, for more; the reasons the consumer is shown; the dependency judged by its own package |
 | `imports` | where a `use` path starts: a package's own schemas only through `package::`, `parent::` or `self::` (a bare path to one is `import::bare-own-schema-path`, in each form of a `use`), a dependency's and `std`'s paths as they were, a path matching nothing (`import::unresolved`), a schema named like a dependency, and the names a dependency can't have |
-| `references` | how a type is named once imported, the Rust model: a whole-namespace `use` brings in only its name (`types::User`, and a bare `User` is `reference::not-in-scope`); a `use` of an item, `{...}` or `*` brings in the names it lists (and `types::User` after it is `reference::qualifier-not-in-scope`); a full path (`package::`, `parent::`, `self::`, `std::`, a dependency's) in a type position with no `use`; a path going down from a name in scope; each spelling reaching the same type, and a package written before the rule unchanged |
+| `references` | how a type is named once imported, the Rust model: a whole-namespace `use` brings in only its name (`types::User`, and a bare `User` is `reference::not-in-scope`); a `use` of an item, `{...}` or `*` brings in the names it lists (and `types::User` after it is `reference::qualifier-not-in-scope`); a full path (`package::`, `parent::`, `self::`, `std::`, a dependency's) in a type position with no `use`; a path going down from a name in scope, a dependency's name included; a name defined twice (`reference::defined-twice`) and an alias resolving it; each spelling reaching the same type, and a package written before the rule unchanged |
 | `chain` | three packages, `c` depending on `b` depending on `a`: a type holding `a`'s unbounded value, used in `c`; and the acceptance resolving `b` asks for `a`'s protocols too |
 
 A case's `description` says what it shows, and for a refused reference the
@@ -148,6 +148,13 @@ not to the fix). The `reference` codes, in
 | --- | --- | --- |
 | `reference::not-in-scope` | a bare name no `use` or declaration of the file brought in: `User` after only `use package::types` | add `use package::types::User`, or write `types::User` |
 | `reference::qualifier-not-in-scope` | a qualified reference whose first segment is not a name in scope or a root: `types::User` after `use package::types::User` | write `User` (or add the `use` that brings the qualifier in) |
+| `reference::defined-twice` | a name defined twice in a file: a `use`d item and a local declaration of the same name, or two `use`s bringing in the same name | rename one, or import with an alias (`use package::b::User as BUser`) |
+
+Both `not-in-scope` codes also cover a name or a qualifier nothing declares
+(`Nowhere`, `nope::types::User`); a fix that adds a `use` is offered only
+where something declares it. Every error is reported, not only the first, so
+a case that has two causes lists both codes. In a type position `parent::`
+and `self::` mean what they mean in a `use`.
 
 Each rule has a passing and a failing variant.
 

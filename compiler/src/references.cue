@@ -22,6 +22,16 @@ package cases
 //     another schema holds an unbounded string, and the one reached holds a
 //     bounded one, which the protocol using it gives up nothing for.
 //
+//   - A name defined twice, by a `use` and a declaration of the file or by two
+//     `use`s, is `reference::defined-twice`, as in Rust. Fix: rename one, or
+//     import with an alias.
+//   - `parent::` and `self::` mean in a type position what they mean in a `use`.
+//
+// Every error is reported, not only the first. A name or a qualifier that
+// nothing declares is `reference::not-in-scope` or
+// `reference::qualifier-not-in-scope` as well; only the fix differs, as a fix
+// that adds a `use` is offered only where a declaration exists somewhere.
+//
 // A refused reference is an error at once, with the likely rewrite as its
 // fix. The fix isn't part of what a case holds a compiler to (a diagnostic is
 // matched on its code and severity); it is in each case's description.
@@ -80,7 +90,7 @@ groups: references: {
 		expect: {builds: true, protocols: {}}
 	}
 	"namespace-bare-refused": {
-		about: "after use package::types a bare User is not in scope (fix: add use package::types::User, or write types::User)"
+		about: "after use package::types a bare User is not in scope: the use brings in only types (fix, offered because User is declared in types: add use package::types::User, or write types::User)"
 		packages: app: schemas: {
 			types: _refTypes
 			api:   "use package::types\n\n" + (_refHolder & {_ref: "User"}).text
@@ -98,7 +108,7 @@ groups: references: {
 		expect: {builds: true, protocols: {}}
 	}
 	"namespace-alias-original-refused": {
-		about: "after use package::types as t, types is not in scope (fix: write t::User)"
+		about: "after use package::types as t only the alias t is in scope, not types, which the alias replaces (fix: write t::User)"
 		packages: app: schemas: {
 			types: _refTypes
 			api:   "use package::types as t\n\n" + (_refHolder & {_ref: "types::User"}).text
@@ -163,7 +173,7 @@ groups: references: {
 		expect: {builds: false, errors: ["reference::qualifier-not-in-scope"]}
 	}
 	"no-use-bare-refused": {
-		about: "a bare User with no use is not in scope (fix: add use package::types::User, or write package::types::User)"
+		about: "a bare User with no use is not in scope (fix, offered because User is declared in package::types: add use package::types::User, or write package::types::User)"
 		packages: app: schemas: {
 			types: _refTypes
 			api:   (_refHolder & {_ref: "User"}).text
@@ -172,13 +182,76 @@ groups: references: {
 		expect: {builds: false, errors: ["reference::not-in-scope"]}
 	}
 	"no-use-qualified-refused": {
-		about: "types::User with no use is not rooted in a name in scope (fix: add use package::types, or write package::types::User)"
+		about: "types::User with no use is not rooted in a name in scope (fix, offered because the package declares types::User: add use package::types, or write package::types::User)"
 		packages: app: schemas: {
 			types: _refTypes
 			api:   (_refHolder & {_ref: "types::User"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["reference::qualifier-not-in-scope"]}
+	}
+
+	// A name or a qualifier that nothing declares has the same two codes, and
+	// no fix that adds a `use`, as there is nothing to import.
+	"nowhere-bare-refused": {
+		about: "a bare Nowhere that no schema of the package or its dependencies declares is not in scope (no fix that adds a use is offered: nothing declares it)"
+		packages: app: schemas: {
+			types: _refTypes
+			api:   "use package::types\n\n" + (_refHolder & {_ref: "Nowhere"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["reference::not-in-scope"]}
+	}
+	"nowhere-qualified-refused": {
+		about: "nope::types::User, whose first segment matches no name in scope, root or schema, is not in scope (no fix that adds a use is offered: nothing is named nope)"
+		packages: app: schemas: {
+			types: _refTypes
+			api:   (_refHolder & {_ref: "nope::types::User"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["reference::qualifier-not-in-scope"]}
+	}
+
+	// A name defined twice is an error, as in Rust: a local declaration with
+	// the name of a `use`d item, or two `use`s bringing in the same name. An
+	// alias resolves the clash.
+	"defined-twice-local-and-use": {
+		about: "use package::billing::Invoice and struct Invoice in the same schema define Invoice twice (fix: rename one, or import with an alias: use package::billing::Invoice as BillingInvoice)"
+		packages: app: schemas: {
+			"billing/api": _refBilling
+			"api":         "use package::billing::api::Invoice\n\n" + _refBilling
+		}
+		build: "app"
+		expect: {builds: false, errors: ["reference::defined-twice"]}
+	}
+	"defined-twice-two-uses": {
+		about: "use package::a::User and use package::b::User bring in User twice (fix: rename one, or import with an alias: use package::b::User as BUser)"
+		packages: app: schemas: {
+			a:   _refTypes
+			b:   _refTypes
+			api: "use package::a::User\nuse package::b::User\n\nstruct Account {\n    id: u32\n}"
+		}
+		build: "app"
+		expect: {builds: false, errors: ["reference::defined-twice"]}
+	}
+	"alias-resolves-local-clash": {
+		about: "use package::billing::api::Invoice as BillingInvoice beside a local Invoice defines each name once"
+		packages: app: schemas: {
+			"billing/api": _refBilling
+			"api":         "use package::billing::api::Invoice as BillingInvoice\n\n" + _refBilling + "\n\nstruct Account {\n    billed: BillingInvoice\n    own: Invoice\n}"
+		}
+		build: "app"
+		expect: {builds: true, protocols: {}}
+	}
+	"alias-resolves-two-uses": {
+		about: "use package::a::User beside use package::b::User as BUser defines each name once"
+		packages: app: schemas: {
+			a:   _refTypes
+			b:   _refTypes
+			api: "use package::a::User\nuse package::b::User as BUser\n\nstruct Account {\n    first: User\n    second: BUser\n}"
+		}
+		build: "app"
+		expect: {builds: true, protocols: {}}
 	}
 
 	// A full path works in a type position without a `use`.
@@ -237,7 +310,7 @@ groups: references: {
 		expect: {builds: true, protocols: {}}
 	}
 	"full-own-schema-unrooted-refused": {
-		about: "a full path to the package's own schema that doesn't start at package, parent or self is not rooted (fix: write package::shapes::types::User)"
+		about: "a full path to the package's own schema that doesn't start at package, parent or self is not rooted (fix, offered because the schema exists: write package::shapes::types::User)"
 		packages: app: schemas: {
 			"shapes/types": _refTypes
 			"api":          (_refHolder & {_ref: "shapes::types::User"}).text
@@ -277,8 +350,20 @@ groups: references: {
 		build: "app"
 		expect: {builds: true, protocols: {}}
 	}
+	"descend-dependency-name": {
+		about: "after use greeting, a dependency's name on its own, greeting::hello::Greeting reaches the dependency's item"
+		packages: {
+			greeting: schemas: hello: _refGreeting
+			app: {
+				schemas: api: "use greeting\n\n" + (_refHolder & {_ref: "greeting::hello::Greeting"}).text
+				dependencies: greeting: {}
+			}
+		}
+		build: "app"
+		expect: {builds: true, protocols: {}}
+	}
 	"descend-skips-a-segment-refused": {
-		about: "after use package::billing, api is not in scope (fix: write billing::api::Invoice, or use package::billing::api)"
+		about: "after use package::billing, api is not in scope (fix, offered because billing::api exists: write billing::api::Invoice, or add use package::billing::api)"
 		packages: app: schemas: {
 			"billing/api": _refBilling
 			"api":         "use package::billing\n\n" + (_refHolder & {_ref: "api::Invoice"}).text

@@ -13,6 +13,10 @@ package cases
 // (the shadowing guard), and `std`, `package`, `parent` and `self` can't be a
 // dependency's name. Neither error has a code: the cases say what the message
 // contains, as the acceptance cases do.
+//
+// Every error is reported, not only the first: where a case's schema holds a
+// bare name that nothing brought into scope, `reference::not-in-scope` is
+// among its errors (see the `references` group).
 
 _impModels: """
 	struct Blob {
@@ -40,10 +44,10 @@ groups: imports: {
 		expect: {builds: false, errors: ["import::bare-own-schema-path"]}
 	}
 	"bare-own-namespace": {
-		about: "a bare path to the package's own schema as a whole is an error"
+		about: "a bare path to the package's own schema as a whole is an error, and so is the bare Blob after it, as a whole-namespace use brings in only its name: every error is reported"
 		packages: app: schemas: {models: _impModels, api: "use models\n\n" + _impUsesBlob}
 		build: "app"
-		expect: {builds: false, errors: ["import::bare-own-schema-path"]}
+		expect: {builds: false, errors: ["import::bare-own-schema-path", "reference::not-in-scope"]}
 	}
 	"bare-own-multi": {
 		about: "a bare path with {...} to the package's own schema is an error"
@@ -169,7 +173,7 @@ groups: imports: {
 			}
 		}
 		build: "app"
-		expect: {builds: false, error_contains: ["reserved"]}
+		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
 	}
 	"dependency-named-package": {
 		about: "package can't be a dependency's name"
@@ -181,7 +185,7 @@ groups: imports: {
 			}
 		}
 		build: "app"
-		expect: {builds: false, error_contains: ["reserved"]}
+		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
 	}
 	"dependency-named-parent": {
 		about: "parent can't be a dependency's name"
@@ -193,7 +197,7 @@ groups: imports: {
 			}
 		}
 		build: "app"
-		expect: {builds: false, error_contains: ["reserved"]}
+		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
 	}
 	"dependency-named-self": {
 		about: "self can't be a dependency's name"
@@ -205,6 +209,6 @@ groups: imports: {
 			}
 		}
 		build: "app"
-		expect: {builds: false, error_contains: ["reserved"]}
+		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
 	}
 }

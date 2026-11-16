@@ -128,6 +128,10 @@
                 {
                     "code": "reference::qualifier-not-in-scope",
                     "severity": "error"
+                },
+                {
+                    "code": "reference::defined-twice",
+                    "severity": "error"
                 }
             ]
         },

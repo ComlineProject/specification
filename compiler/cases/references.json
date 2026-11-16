@@ -31,7 +31,7 @@
         },
         {
             "id": "references/namespace-bare-refused",
-            "description": "after use package::types a bare User is not in scope (fix: add use package::types::User, or write types::User)",
+            "description": "after use package::types a bare User is not in scope: the use brings in only types (fix, offered because User is declared in types: add use package::types::User, or write types::User)",
             "packages": [
                 {
                     "name": "app",
@@ -89,7 +89,7 @@
         },
         {
             "id": "references/namespace-alias-original-refused",
-            "description": "after use package::types as t, types is not in scope (fix: write t::User)",
+            "description": "after use package::types as t only the alias t is in scope, not types, which the alias replaces (fix: write t::User)",
             "packages": [
                 {
                     "name": "app",
@@ -294,7 +294,7 @@
         },
         {
             "id": "references/no-use-bare-refused",
-            "description": "a bare User with no use is not in scope (fix: add use package::types::User, or write package::types::User)",
+            "description": "a bare User with no use is not in scope (fix, offered because User is declared in package::types: add use package::types::User, or write package::types::User)",
             "packages": [
                 {
                     "name": "app",
@@ -325,7 +325,7 @@
         },
         {
             "id": "references/no-use-qualified-refused",
-            "description": "types::User with no use is not rooted in a name in scope (fix: add use package::types, or write package::types::User)",
+            "description": "types::User with no use is not rooted in a name in scope (fix, offered because the package declares types::User: add use package::types, or write package::types::User)",
             "packages": [
                 {
                     "name": "app",
@@ -352,6 +352,192 @@
                         "severity": "error"
                     }
                 ]
+            }
+        },
+        {
+            "id": "references/nowhere-bare-refused",
+            "description": "a bare Nowhere that no schema of the package or its dependencies declares is not in scope (no fix that adds a use is offered: nothing declares it)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/types.ids",
+                            "text": "struct User {\n    id: u32\n}\n\nstruct Order {\n    id: u32\n}\n"
+                        },
+                        {
+                            "path": "src/api.ids",
+                            "text": "use package::types\n\nstruct Account {\n    owner: Nowhere\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "reference::not-in-scope",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "references/nowhere-qualified-refused",
+            "description": "nope::types::User, whose first segment matches no name in scope, root or schema, is not in scope (no fix that adds a use is offered: nothing is named nope)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/types.ids",
+                            "text": "struct User {\n    id: u32\n}\n\nstruct Order {\n    id: u32\n}\n"
+                        },
+                        {
+                            "path": "src/api.ids",
+                            "text": "struct Account {\n    owner: nope::types::User\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "reference::qualifier-not-in-scope",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "references/defined-twice-local-and-use",
+            "description": "use package::billing::Invoice and struct Invoice in the same schema define Invoice twice (fix: rename one, or import with an alias: use package::billing::Invoice as BillingInvoice)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/billing/api.ids",
+                            "text": "struct Invoice {\n    data: char[max 64]\n}\n"
+                        },
+                        {
+                            "path": "src/api.ids",
+                            "text": "use package::billing::api::Invoice\n\nstruct Invoice {\n    data: char[max 64]\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "reference::defined-twice",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "references/defined-twice-two-uses",
+            "description": "use package::a::User and use package::b::User bring in User twice (fix: rename one, or import with an alias: use package::b::User as BUser)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/a.ids",
+                            "text": "struct User {\n    id: u32\n}\n\nstruct Order {\n    id: u32\n}\n"
+                        },
+                        {
+                            "path": "src/b.ids",
+                            "text": "struct User {\n    id: u32\n}\n\nstruct Order {\n    id: u32\n}\n"
+                        },
+                        {
+                            "path": "src/api.ids",
+                            "text": "use package::a::User\nuse package::b::User\n\nstruct Account {\n    id: u32\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "reference::defined-twice",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "references/alias-resolves-local-clash",
+            "description": "use package::billing::api::Invoice as BillingInvoice beside a local Invoice defines each name once",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/billing/api.ids",
+                            "text": "struct Invoice {\n    data: char[max 64]\n}\n"
+                        },
+                        {
+                            "path": "src/api.ids",
+                            "text": "use package::billing::api::Invoice as BillingInvoice\n\nstruct Invoice {\n    data: char[max 64]\n}\n\nstruct Account {\n    billed: BillingInvoice\n    own: Invoice\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "protocols": [],
+                "builds": true,
+                "diagnostics": []
+            }
+        },
+        {
+            "id": "references/alias-resolves-two-uses",
+            "description": "use package::a::User beside use package::b::User as BUser defines each name once",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/a.ids",
+                            "text": "struct User {\n    id: u32\n}\n\nstruct Order {\n    id: u32\n}\n"
+                        },
+                        {
+                            "path": "src/b.ids",
+                            "text": "struct User {\n    id: u32\n}\n\nstruct Order {\n    id: u32\n}\n"
+                        },
+                        {
+                            "path": "src/api.ids",
+                            "text": "use package::a::User\nuse package::b::User as BUser\n\nstruct Account {\n    first: User\n    second: BUser\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "protocols": [],
+                "builds": true,
+                "diagnostics": []
             }
         },
         {
@@ -525,7 +711,7 @@
         },
         {
             "id": "references/full-own-schema-unrooted-refused",
-            "description": "a full path to the package's own schema that doesn't start at package, parent or self is not rooted (fix: write package::shapes::types::User)",
+            "description": "a full path to the package's own schema that doesn't start at package, parent or self is not rooted (fix, offered because the schema exists: write package::shapes::types::User)",
             "packages": [
                 {
                     "name": "app",
@@ -647,8 +833,46 @@
             }
         },
         {
+            "id": "references/descend-dependency-name",
+            "description": "after use greeting, a dependency's name on its own, greeting::hello::Greeting reaches the dependency's item",
+            "packages": [
+                {
+                    "name": "greeting",
+                    "config": "congregation greeting\nspecification_version = 1\n",
+                    "schemas": [
+                        {
+                            "path": "src/hello.ids",
+                            "text": "struct Greeting {\n    text: char[max 64]\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                },
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\ndependencies = {\n    greeting = {\n        path = \"../greeting\"\n    }\n}\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "use greeting\n\nstruct Account {\n    owner: greeting::hello::Greeting\n}\n"
+                        }
+                    ],
+                    "dependencies": [
+                        {
+                            "name": "greeting"
+                        }
+                    ]
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "protocols": [],
+                "builds": true,
+                "diagnostics": []
+            }
+        },
+        {
             "id": "references/descend-skips-a-segment-refused",
-            "description": "after use package::billing, api is not in scope (fix: write billing::api::Invoice, or use package::billing::api)",
+            "description": "after use package::billing, api is not in scope (fix, offered because billing::api exists: write billing::api::Invoice, or add use package::billing::api)",
             "packages": [
                 {
                     "name": "app",

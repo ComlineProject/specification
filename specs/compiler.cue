@@ -108,6 +108,7 @@ import "github.com/comlineproject/specification/catalog"
 	close({code!: "import::unresolved", severity!: "error"}),
 	close({code!: "reference::not-in-scope", severity!: "error"}),
 	close({code!: "reference::qualifier-not-in-scope", severity!: "error"}),
+	close({code!: "reference::defined-twice", severity!: "error"}),
 ])
 
 #CompilerWarning: or([
