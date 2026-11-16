@@ -413,7 +413,7 @@
         },
         {
             "id": "imports/unknown-first-segment",
-            "description": "a bare path that is neither a dependency, std nor one of the package's schemas is unresolved, not this error",
+            "description": "a bare path that is neither a dependency, std nor one of the package's schemas is unresolved, not this error; the use still brings Blob into scope, so the bare Blob after it is no second error, as in Rust",
             "packages": [
                 {
                     "name": "app",
@@ -503,7 +503,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "struct Upload {\n    blob: Blob\n}\n"
+                            "text": "struct Upload {\n    size: u32\n}\n"
                         }
                     ],
                     "dependencies": [
@@ -516,12 +516,7 @@
             "build": "app",
             "expect": {
                 "builds": false,
-                "diagnostics": [
-                    {
-                        "code": "reference::not-in-scope",
-                        "severity": "error"
-                    }
-                ],
+                "diagnostics": [],
                 "error_contains": [
                     "reserved"
                 ]
@@ -548,7 +543,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "struct Upload {\n    blob: Blob\n}\n"
+                            "text": "struct Upload {\n    size: u32\n}\n"
                         }
                     ],
                     "dependencies": [
@@ -561,12 +556,7 @@
             "build": "app",
             "expect": {
                 "builds": false,
-                "diagnostics": [
-                    {
-                        "code": "reference::not-in-scope",
-                        "severity": "error"
-                    }
-                ],
+                "diagnostics": [],
                 "error_contains": [
                     "reserved"
                 ]
@@ -593,7 +583,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "struct Upload {\n    blob: Blob\n}\n"
+                            "text": "struct Upload {\n    size: u32\n}\n"
                         }
                     ],
                     "dependencies": [
@@ -606,12 +596,7 @@
             "build": "app",
             "expect": {
                 "builds": false,
-                "diagnostics": [
-                    {
-                        "code": "reference::not-in-scope",
-                        "severity": "error"
-                    }
-                ],
+                "diagnostics": [],
                 "error_contains": [
                     "reserved"
                 ]
@@ -638,7 +623,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "struct Upload {\n    blob: Blob\n}\n"
+                            "text": "struct Upload {\n    size: u32\n}\n"
                         }
                     ],
                     "dependencies": [
@@ -651,12 +636,7 @@
             "build": "app",
             "expect": {
                 "builds": false,
-                "diagnostics": [
-                    {
-                        "code": "reference::not-in-scope",
-                        "severity": "error"
-                    }
-                ],
+                "diagnostics": [],
                 "error_contains": [
                     "reserved"
                 ]

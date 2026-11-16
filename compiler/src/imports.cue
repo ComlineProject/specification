@@ -14,9 +14,12 @@ package cases
 // dependency's name. Neither error has a code: the cases say what the message
 // contains, as the acceptance cases do.
 //
-// Every error is reported, not only the first: where a case's schema holds a
-// bare name that nothing brought into scope, `reference::not-in-scope` is
-// among its errors (see the `references` group).
+// Every error is reported, not only the first, among those of the schemas: a
+// schema's bare name that nothing brought into scope is
+// `reference::not-in-scope` besides any other error of the schema (see the
+// `references` group). A config error, as the reserved dependency names,
+// stops the build before the schemas are checked, as in Rust, so those cases
+// hold no reference of their own.
 
 _impModels: """
 	struct Blob {
@@ -25,6 +28,13 @@ _impModels: """
 
 	struct Tag {
 	    id: u32
+	}
+	"""
+
+// A schema that holds no reference, for the cases a config error stops.
+_impPlain: """
+	struct Upload {
+	    size: u32
 	}
 	"""
 
@@ -144,7 +154,7 @@ groups: imports: {
 		expect: {builds: true, protocols: {}}
 	}
 	"unknown-first-segment": {
-		about: "a bare path that is neither a dependency, std nor one of the package's schemas is unresolved, not this error"
+		about: "a bare path that is neither a dependency, std nor one of the package's schemas is unresolved, not this error; the use still brings Blob into scope, so the bare Blob after it is no second error, as in Rust"
 		packages: app: schemas: {models: _impModels, api: "use modles::Blob\n\n" + _impUsesBlob}
 		build: "app"
 		expect: {builds: false, errors: ["import::unresolved"]}
@@ -168,47 +178,47 @@ groups: imports: {
 		packages: {
 			std: schemas: api: _impModels
 			app: {
-				schemas: api: _impUsesBlob
+				schemas: api: _impPlain
 				dependencies: std: {}
 			}
 		}
 		build: "app"
-		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
+		expect: {builds: false, error_contains: ["reserved"]}
 	}
 	"dependency-named-package": {
 		about: "package can't be a dependency's name"
 		packages: {
 			package: schemas: api: _impModels
 			app: {
-				schemas: api: _impUsesBlob
+				schemas: api: _impPlain
 				dependencies: package: {}
 			}
 		}
 		build: "app"
-		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
+		expect: {builds: false, error_contains: ["reserved"]}
 	}
 	"dependency-named-parent": {
 		about: "parent can't be a dependency's name"
 		packages: {
 			parent: schemas: api: _impModels
 			app: {
-				schemas: api: _impUsesBlob
+				schemas: api: _impPlain
 				dependencies: parent: {}
 			}
 		}
 		build: "app"
-		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
+		expect: {builds: false, error_contains: ["reserved"]}
 	}
 	"dependency-named-self": {
 		about: "self can't be a dependency's name"
 		packages: {
 			self: schemas: api: _impModels
 			app: {
-				schemas: api: _impUsesBlob
+				schemas: api: _impPlain
 				dependencies: self: {}
 			}
 		}
 		build: "app"
-		expect: {builds: false, errors: ["reference::not-in-scope"], error_contains: ["reserved"]}
+		expect: {builds: false, error_contains: ["reserved"]}
 	}
 }

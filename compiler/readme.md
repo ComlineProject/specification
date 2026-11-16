@@ -153,7 +153,11 @@ not to the fix). The `reference` codes, in
 Both `not-in-scope` codes also cover a name or a qualifier nothing declares
 (`Nowhere`, `nope::types::User`); a fix that adds a `use` is offered only
 where something declares it. Every error is reported, not only the first, so
-a case that has two causes lists both codes. In a type position `parent::`
+a case that has two causes lists both codes. A config error (the
+reserved dependency names) stops the build before the schemas are checked, as
+in Rust, so no schema error is reported with it. A `use` that fails to resolve
+(`import::unresolved`) still brings its name into scope, so it never cascades
+into a `reference::not-in-scope` for the name. In a type position `parent::`
 and `self::` mean what they mean in a `use`.
 
 Each rule has a passing and a failing variant.
