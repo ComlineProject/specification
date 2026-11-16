@@ -5,7 +5,7 @@ use crate::{
     SeqSize, Sizes, Status, StringSize, StructSize, Value, Width,
 };
 
-pub const SPEC_VERSION: &str = r#"0.11"#;
+pub const SPEC_VERSION: &str = r#"0.12"#;
 
 /// Every guarantee, in the catalog's order.
 pub const GUARANTEES: &[Guarantee] = &[
