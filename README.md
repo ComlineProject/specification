@@ -6,7 +6,7 @@ proven, the formats of these files, and the catalog of names they share. A runti
 tool implements against this repository, and pins it like any other
 dependency. Comline's own runtimes do the same.
 
-Version: **0.12** ([`VERSION`](VERSION)). While Comline is in its early days
+Version: **0.13** ([`VERSION`](VERSION)). While Comline is in its early days
 (0.x), a minor version may change anything, and the change is named in the
 pull request that makes it and in [the changes](#changes) below.
 
@@ -229,6 +229,26 @@ What an implementation answers, and how its answers are judged:
 
 ### Changes
 
+- **0.13:** conformance cases for named connection sets (`@connection`,
+  specification#21, epic core#300): a package declares sets of protocols, each
+  with its own connection and its own Hello. No existing case changes and no
+  bytes move.
+  - Compiler cases: a new `connection` group, 32 cases, and six new codes
+    (`connection::...`, **proposed**, awaiting confirmation; see
+    [`compiler/`](compiler/readme.md#named-connection-sets)).
+  - `handshake-comline2` cases, for a package with three protocols (Admin 0,
+    Public 1, Health 2) and two sets, `admin` = {0, 2} and `public` = {1, 2}:
+    `hello-set-admin` and `hello-set-public` (each set's Hello lists only its
+    members, with the package's numbers, and Health, which is in both, is the
+    same entry in both), and `offer-set-shared-only` (a client of `admin`
+    reaching the `public` endpoint: the set's name isn't on the wire, so the
+    connection carries what the two Hellos share, Health; Admin is refused
+    `unknown_protocol` in the answer and absent from the responder's result,
+    and Public, which the offer didn't list, is refused in it). The bytes are
+    the Rust reference's, as for 0.12's.
+  - No compat cases: the corpus has none yet (the version rules for sets,
+    which core#302 and the frozen IR carry, are in the epic: adding a set or a
+    protocol to one is minor, removing either or renaming a set is major).
 - **0.12:** `comline@2` cases for a Hello that lists a subset of the package's
   protocols (named connections, specification#13): an end provides some of the
   package's protocols and calls some of the other side's, and its Hello lists
