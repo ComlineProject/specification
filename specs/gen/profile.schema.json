@@ -351,7 +351,7 @@
         },
         "HandshakeProfile": {
             "type": "object",
-            "description": "A handshake may leave a fact out, which reads as `false`: not established.",
+            "description": "A handshake may leave a fact that establishes a guarantee out, which reads\nas `false`: not established, and one that has a default (`schema_comparison`:\n`whole_schema`), which reads as the default. Any other fact it states, as a\nframing does.",
             "additionalProperties": false,
             "properties": {
                 "$schema": {
@@ -366,6 +366,25 @@
                         },
                         "schema_agreement": {
                             "$ref": "#/$defs/Agreement"
+                        },
+                        "schema_comparison": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "proven_by": {
+                                    "$ref": "#/$defs/ProvenBy"
+                                },
+                                "value": {
+                                    "enum": [
+                                        "per_protocol",
+                                        "whole_schema"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "proven_by",
+                                "value"
+                            ]
                         }
                     }
                 },

@@ -23,7 +23,11 @@ What an entry may say, and the rules across entries, are in
   encoding's name. Where core freezes another spelling than the wire name
   (`frozen_as`: `jsonrpc`, `datagram`), that spelling is an alias too.
 - A reference (`establishes`, `feature`) names an entry that exists.
-- A handshake's facts are booleans.
+- A handshake's fact that `establishes` a guarantee is a boolean; its other
+  facts (`schema_comparison`) take the values they list. A fact may have a
+  `default`, one of its values, which a profile that leaves it out is read
+  as: `schema_comparison` is `whole_schema`, so a handshake that doesn't state
+  it can't carry sets.
 - A guarantee's `scopes` say where an `@unverified` marker acknowledging it
   may sit: any of `package`, `protocol`, `function`, `argument`, `field` and
   `type`, outermost to innermost, each at most once. They follow from where
