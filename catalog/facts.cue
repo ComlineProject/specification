@@ -138,4 +138,14 @@ facts: {
 			"false": "it doesn't"
 		}
 	}
+	schema_comparison: {
+		applies_to:  "handshake"
+		title:       "schema comparison"
+		description: "What the handshake compares to judge two ends' schemas, which decides whether a change in one protocol can refuse the others: sets of protocols on their own connections need `per_protocol`."
+		since:       "0.14"
+		values: {
+			per_protocol: "each protocol on its own, by its line and shape, so a protocol that differs is refused and the rest connect"
+			whole_schema: "the whole package at once, by one fingerprint, so any change refuses every protocol"
+		}
+	}
 }

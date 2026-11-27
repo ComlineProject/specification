@@ -35,14 +35,16 @@ import "github.com/comlineproject/specification/catalog"
 	})
 })
 
-// A handshake may leave a fact out, which reads as `false`: not established.
+// A handshake may leave a fact that establishes a guarantee out, which reads
+// as `false`: not established. Its other facts it states, as a framing does.
 #HandshakeProfile: close({
 	$schema?: string
 	name!:    #ProfileName
 	kind!:    "handshake"
 	facts!: close({
 		for id, fact in catalog.facts if fact.applies_to == "handshake" {
-			(id)?: #Agreement
+			if fact.establishes != _|_ {(id)?: #Agreement}
+			if fact.establishes == _|_ {(id)!: close({value!: or([for v, _ in fact.values {v}]), proven_by!: #ProvenBy})}
 		}
 	})
 })

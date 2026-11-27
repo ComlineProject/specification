@@ -125,9 +125,10 @@ pub struct Value {
     pub meaning: &'static str,
 }
 
-/// A fact an encoding's profile states. A handshake's facts are booleans
-/// (`"true"`, `"false"`), and `true` establishes the guarantee named in
-/// `establishes`.
+/// A fact an encoding's profile states. A handshake's fact that names a
+/// guarantee in `establishes` is a boolean (`"true"`, `"false"`), and `true`
+/// establishes it; its other facts (`schema_comparison`) take the values they
+/// list, like a format's and a framing's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Fact {
     pub id: &'static str,
@@ -531,11 +532,20 @@ mod tests {
 
     #[test]
     fn handshake_facts_establish_guarantees() {
-        for f in facts_of(Kind::Handshake) {
-            let g = f.establishes.expect("a handshake fact establishes a guarantee");
+        for f in facts_of(Kind::Handshake).filter(|f| f.establishes.is_some()) {
+            let g = f.establishes.unwrap();
             assert!(guarantee(g).is_some(), "{g}");
             assert!(f.allows("true") && f.allows("false"));
         }
+    }
+
+    #[test]
+    fn a_handshake_states_whether_it_compares_protocol_by_protocol() {
+        let comparison = fact(fact::SCHEMA_COMPARISON).unwrap();
+        assert_eq!(comparison.applies_to, Kind::Handshake);
+        assert!(comparison.establishes.is_none());
+        assert!(comparison.allows("per_protocol") && comparison.allows("whole_schema"));
+        assert!(!comparison.allows("true"));
     }
 
     #[test]

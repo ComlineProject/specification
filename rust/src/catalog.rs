@@ -5,7 +5,7 @@ use crate::{
     SeqSize, Sizes, Status, StringSize, StructSize, Value, Width,
 };
 
-pub const SPEC_VERSION: &str = r#"0.13"#;
+pub const SPEC_VERSION: &str = r#"0.14"#;
 
 /// Every guarantee, in the catalog's order.
 pub const GUARANTEES: &[Guarantee] = &[
@@ -216,6 +216,17 @@ pub const FACTS: &[Fact] = &[
         status: Status::Stable,
         replaced_by: None,
         since: Some(r#"0.2"#),
+    },
+    Fact {
+        id: r#"schema_comparison"#,
+        applies_to: Kind::Handshake,
+        title: r#"schema comparison"#,
+        description: r#"What the handshake compares to judge two ends' schemas, which decides whether a change in one protocol can refuse the others: sets of protocols on their own connections need `per_protocol`."#,
+        values: &[Value { id: r#"per_protocol"#, meaning: r#"each protocol on its own, by its line and shape, so a protocol that differs is refused and the rest connect"# }, Value { id: r#"whole_schema"#, meaning: r#"the whole package at once, by one fingerprint, so any change refuses every protocol"# }],
+        establishes: None,
+        status: Status::Stable,
+        replaced_by: None,
+        since: Some(r#"0.14"#),
     },
 ];
 
@@ -615,6 +626,7 @@ pub mod fact {
     pub const PROTOCOL: &str = r#"protocol"#;
     pub const SCHEMA_AGREEMENT: &str = r#"schema_agreement"#;
     pub const ENCODING_AGREEMENT: &str = r#"encoding_agreement"#;
+    pub const SCHEMA_COMPARISON: &str = r#"schema_comparison"#;
 }
 
 /// Encoding wire names.
@@ -661,7 +673,7 @@ pub mod sets {
     pub const PROFILED: &[&str] = &[r#"packed@1"#, r#"json@1"#, r#"msgpack@1"#, r#"jsonrpc@1"#, r#"datagram@1"#, r#"datagram@2"#, r#"datagram@3"#, r#"comline@1"#, r#"comline@2"#];
     pub const FORMAT_FACTS: &[&str] = &[r#"struct_fields"#, r#"unknown_field"#, r#"missing_optional"#, r#"enum_variants"#, r#"unknown_variant"#, r#"integer_width"#, r#"output"#];
     pub const FRAMING_FACTS: &[&str] = &[r#"calls"#, r#"directions"#, r#"errors"#, r#"payload"#, r#"protocol"#];
-    pub const HANDSHAKE_FACTS: &[&str] = &[r#"schema_agreement"#, r#"encoding_agreement"#];
+    pub const HANDSHAKE_FACTS: &[&str] = &[r#"schema_agreement"#, r#"encoding_agreement"#, r#"schema_comparison"#];
     pub const FEATURES: &[&str] = &[r#"name-hash"#, r#"handshake"#, r#"envelope"#, r#"framing-datagram"#, r#"framing-datagram2"#, r#"framing-datagram3"#, r#"handshake-comline2"#, r#"stream"#, r#"framing-jsonrpc"#, r#"format-json"#, r#"format-msgpack"#, r#"format-packed"#, r#"sizes-packed"#, r#"sizes-msgpack"#, r#"sizes-json"#];
     /// Every alias, with the wire name it resolves to.
     pub const ALIASES: &[(&str, &str)] = &[(r#"jsonrpc"#, r#"jsonrpc@1"#), (r#"json-rpc"#, r#"jsonrpc@1"#), (r#"jsonrpc-2.0"#, r#"jsonrpc@1"#), (r#"datagram"#, r#"datagram@1"#), (r#"comline.datagram"#, r#"datagram@1"#)];

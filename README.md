@@ -6,7 +6,7 @@ proven, the formats of these files, and the catalog of names they share. A runti
 tool implements against this repository, and pins it like any other
 dependency. Comline's own runtimes do the same.
 
-Version: **0.13** ([`VERSION`](VERSION)). While Comline is in its early days
+Version: **0.14** ([`VERSION`](VERSION)). While Comline is in its early days
 (0.x), a minor version may change anything, and the change is named in the
 pull request that makes it and in [the changes](#changes) below.
 
@@ -226,9 +226,26 @@ What an implementation answers, and how its answers are judged:
   `Point` and `Color` shapes the official profiles use. A handshake's facts
   are shown by `handshake_check` cases: one the peer agrees in, accepted,
   and, per thing the fact covers, one differing in only that, refused.
+  `schema_comparison` is shown by cases in which the two ends' schemas differ:
+  for `per_protocol`, a negotiation (`comline2_negotiate`) refusing the
+  protocol that differs while another is accepted; for `whole_schema`, a
+  `handshake_check` refused for the one fingerprint.
 
 ### Changes
 
+- **0.14:** a handshake states `schema_comparison` (named connection sets,
+  core#300): what it compares to judge two ends' schemas, `per_protocol` (each
+  protocol on its own, by its line and shape: `comline@2`) or `whole_schema`
+  (the whole package by one fingerprint, so any change refuses every protocol:
+  `comline@1`). Sets of protocols need `per_protocol`, and a tool reads that
+  from the fact, not from the handshake's name. Unlike `schema_agreement` and
+  `encoding_agreement` it isn't a boolean: it takes the values the catalog
+  lists, and a handshake profile has to state it, as a framing states every
+  fact. `none` has no profile and is unchanged. No vector, case or byte
+  changes. `comline@2` shows `per_protocol` by `offer-accept` and
+  `offer-line-mismatch` (one protocol refused alone, the other accepted);
+  `comline@1` shows `whole_schema` by `handshake/check-agree` and
+  `handshake/check-reject-ir-hash`.
 - **0.13:** conformance cases for named connection sets (`@connection`,
   specification#21, epic core#300): a package declares sets of protocols, each
   with its own connection and its own Hello. No existing case changes and no
@@ -461,7 +478,8 @@ check of the decade that could be longer finds none), not from a vector.
 about how it encodes, which the version comparison turns into bumps. A format
 states `struct_fields`, `unknown_field`, `missing_optional`, `enum_variants`,
 `unknown_variant`, `integer_width` and `output`, and may state `sizes`; a framing states `calls`,
-`directions`, `errors` and `payload`. The catalog gives each fact's values and
+`directions`, `errors` and `payload`; a handshake states `schema_agreement`
+and `encoding_agreement` (booleans) and `schema_comparison`. The catalog gives each fact's values and
 what they mean ([`catalog/facts.cue`](catalog/facts.cue)).
 
 `payload` says what a framing needs of a payload, and `output` what a format

@@ -35,8 +35,9 @@ import "list"
 })
 
 // A fact an encoding's profile states, with every value it may take and
-// what each means. A handshake's facts are booleans: `true` establishes the
-// guarantee named in `establishes`.
+// what each means. A handshake's fact that names a guarantee in
+// `establishes` is a boolean: `true` establishes it. A handshake's other
+// facts take the values they list, like a format's and a framing's.
 #Fact: close({
 	#Lifecycle
 	applies_to!:  "format" | "framing" | "handshake"
@@ -173,8 +174,8 @@ _scopes_follow_origin: [for id, g in guarantees
 	let inner = [for s in g.scopes if _scope_rank[s] >= _scope_rank["function"] {s}]
 	if (g.comes_from == "type" && !list.Contains(g.scopes, "type")) || (g.comes_from != "type" && len(inner) > 0) {id}] & []
 
-// A handshake's facts are booleans.
-_boolean_handshake_facts: [for id, f in facts if f.applies_to == "handshake" if [for v, _ in f.values {v}] != ["true", "false"] {id}] & []
+// A handshake's fact that establishes a guarantee is a boolean.
+_boolean_handshake_facts: [for id, f in facts if f.applies_to == "handshake" if f.establishes != _|_ if [for v, _ in f.values {v}] != ["true", "false"] {id}] & []
 
 // An alias names one encoding, and is never another's wire name or frozen
 // spelling. A frozen spelling is also an alias.
