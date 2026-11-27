@@ -132,6 +132,42 @@
                 {
                     "code": "reference::defined-twice",
                     "severity": "error"
+                },
+                {
+                    "code": "connection::unassigned",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::not-on-a-connection",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::bad-set-name",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::unsupported-encoding",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::encoding-mismatch",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::unknown-set",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::duplicate-set",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::empty-list",
+                    "severity": "error"
+                },
+                {
+                    "code": "validation::annotation-value-mismatch",
+                    "severity": "error"
                 }
             ]
         },
