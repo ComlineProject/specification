@@ -18,7 +18,9 @@ import "strings"
 //   - Each set's encodings are checked on their own. `config.idp` may state a
 //     set's own in a top-level `connections` table, defaulting to the package's
 //     `wire` and `handshake`. A member's own `@handshake` (and `@framing`) must
-//     agree with its set's.
+//     agree with its set's: the handshake's name and its wire parameters
+//     (today `exchange`) must match, while its policy parameters (`scope`,
+//     `newer_consumer`, `same_version_differs`) may differ per member.
 //   - Sets need a handshake that compares protocol by protocol and a framing
 //     whose protocol numbers don't depend on position: `comline@2` or later
 //     with `datagram@3`. `comline@1` (it hashes the whole schema) with any
@@ -392,6 +394,15 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2]
 			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = \"public\"\n"}).text
+		}
+		build: "app"
+		expect: _cnBuilds
+	}
+	"member-handshake-policy-differs": {
+		about: "a member's @handshake may differ from its set's in a policy parameter (scope, newer_consumer, same_version_differs), which isn't on the wire: only the name and the wire parameters (exchange) must match"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , scope = \"package\" , newer_consumer = \"refuse\" }\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds

@@ -233,7 +233,7 @@ What an implementation answers, and how its answers are judged:
   specification#21, epic core#300): a package declares sets of protocols, each
   with its own connection and its own Hello. No existing case changes and no
   bytes move.
-  - Compiler cases: a new `connection` group, 38 cases, and eight new codes, the
+  - Compiler cases: a new `connection` group, 39 cases, and eight new codes, the
     `connection::` family (`unassigned`, `not-on-a-connection`,
     `bad-set-name`, `unsupported-encoding`, `encoding-mismatch`,
     `unknown-set`, `duplicate-set`, `empty-list`), and one existing,

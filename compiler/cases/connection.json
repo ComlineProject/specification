@@ -785,6 +785,38 @@
             }
         },
         {
+            "id": "connection/member-handshake-policy-differs",
+            "description": "a member's @handshake may differ from its set's in a policy parameter (scope, newer_consumer, same_version_differs), which isn't on the wire: only the name and the wire parameters (exchange) must match",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , scope = \"package\" , newer_consumer = \"refuse\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "protocols": [
+                    {
+                        "name": "Ops",
+                        "given_up": []
+                    },
+                    {
+                        "name": "Chat",
+                        "given_up": []
+                    }
+                ],
+                "builds": true,
+                "diagnostics": []
+            }
+        },
+        {
             "id": "connection/member-handshake-disagrees",
             "description": "a member whose @handshake isn't its set's, here another exchange, which both ends must agree on, is refused (fix: remove @handshake, or change the set's)",
             "packages": [
