@@ -233,9 +233,13 @@ What an implementation answers, and how its answers are judged:
   specification#21, epic core#300): a package declares sets of protocols, each
   with its own connection and its own Hello. No existing case changes and no
   bytes move.
-  - Compiler cases: a new `connection` group, 32 cases, and six new codes
-    (`connection::...`, **proposed**, awaiting confirmation; see
-    [`compiler/`](compiler/readme.md#named-connection-sets)).
+  - Compiler cases: a new `connection` group, 38 cases, and eight new codes, the
+    `connection::` family (`unassigned`, `not-on-a-connection`,
+    `bad-set-name`, `unsupported-encoding`, `encoding-mismatch`,
+    `unknown-set`, `duplicate-set`, `empty-list`), and one existing,
+    `validation::annotation-value-mismatch`; see
+    [`compiler/`](compiler/readme.md#named-connection-sets). A set needs
+    `comline@2` or later with `datagram@3`.
   - `handshake-comline2` cases, for a package with three protocols (Admin 0,
     Public 1, Health 2) and two sets, `admin` = {0, 2} and `public` = {1, 2}:
     `hello-set-admin` and `hello-set-public` (each set's Hello lists only its

@@ -109,13 +109,16 @@ import "github.com/comlineproject/specification/catalog"
 	close({code!: "reference::not-in-scope", severity!: "error"}),
 	close({code!: "reference::qualifier-not-in-scope", severity!: "error"}),
 	close({code!: "reference::defined-twice", severity!: "error"}),
-	// Named connection sets. PROPOSED: the codes wait for confirmation.
+	// Named connection sets.
 	close({code!: "connection::unassigned", severity!: "error"}),
 	close({code!: "connection::not-on-a-connection", severity!: "error"}),
 	close({code!: "connection::bad-set-name", severity!: "error"}),
-	close({code!: "connection::needs-per-protocol-handshake", severity!: "error"}),
+	close({code!: "connection::unsupported-encoding", severity!: "error"}),
 	close({code!: "connection::encoding-mismatch", severity!: "error"}),
 	close({code!: "connection::unknown-set", severity!: "error"}),
+	close({code!: "connection::duplicate-set", severity!: "error"}),
+	close({code!: "connection::empty-list", severity!: "error"}),
+	close({code!: "validation::annotation-value-mismatch", severity!: "error"}),
 ])
 
 #CompilerWarning: or([

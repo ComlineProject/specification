@@ -17,17 +17,23 @@ import "strings"
 //     `services`, ...) are refused, with an error that says why.
 //   - Each set's encodings are checked on their own. `config.idp` may state a
 //     set's own in a top-level `connections` table, defaulting to the package's
-//     `wire` and `handshake`. A member's own `@framing` and `@handshake` must
-//     agree with its set's, and a protocol in two sets whose framings differ
-//     can't pin `@framing`.
-//   - Sets need a handshake that compares protocol by protocol: `comline@1` with
-//     `datagram@2` can't have sets.
+//     `wire` and `handshake`. A member's own `@handshake` (and `@framing`) must
+//     agree with its set's.
+//   - Sets need a handshake that compares protocol by protocol and a framing
+//     whose protocol numbers don't depend on position: `comline@2` or later
+//     with `datagram@3`. `comline@1` (it hashes the whole schema) with any
+//     framing, `datagram@2` (numbers by position) with any handshake, and
+//     handshake `none` (no Hello, so nothing enforces the set) are refused.
+//     Only `datagram@3` is allowed in a set, so no case can have two sets with
+//     different framings, or a member whose framing differs from its set's
+//     without also being refused: such disagreements are shown by the
+//     handshake's `exchange`, a parameter both ends must agree on.
+//   - A list names each set once, and at least one.
 //   - `annotations.connection.allowed = false` forbids the annotation, with no
 //     new key.
 //
-// The codes (`connection::...`) are PROPOSED and wait for the maintainer's
-// confirmation (see `compiler/readme.md`).
-//
+// The codes (`connection::...`) are decided, with the reason in the message.
+
 // Every case states the package's `handshake` where it matters, so a default
 // (which depends on the protocols' framings) never decides the outcome.
 
@@ -38,7 +44,8 @@ _cnFraming: "settings = { annotations = { framing = { allowed = true } } }"
 _cnComline2: "handshake = \"comline@2\""
 _cnComline1: "handshake = \"comline@1\""
 
-// The old wire: `datagram@2` and `comline@1`, which can't have sets.
+// The old wire: `datagram@2` and `comline@1`, which can't have sets (nor can
+// either alone).
 _cnOldWire: "wire = { framing = \"datagram@2\" }"
 
 // A set in the `connections` table, as `config.idp` writes a dictionary
@@ -47,7 +54,11 @@ _cnSet: {
 	name:      string
 	framing:   string
 	handshake: string
-	text:      "    \(name) = { wire = { framing = \"\(framing)\" } handshake = { name = \"\(handshake)\" } }\n"
+	// The handshake's `exchange`, where the set states one.
+	exchange?: string
+	_extra:    string | *""
+	if exchange != _|_ {_extra: " exchange = \"\(exchange)\""}
+	text: "    \(name) = { wire = { framing = \"\(framing)\" } handshake = { name = \"\(handshake)\"\(_extra) } }\n"
 }
 
 _cnTable: {
@@ -152,6 +163,43 @@ groups: connection: {
 		build: "app"
 		expect: {builds: false, errors: ["connection::unassigned"]}
 	}
+	"duplicate-set": {
+		about: "a set named twice in one list is refused (fix: name it once)"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: """
+				@connection = ["admin", "admin"]
+				protocol Ops {
+				    function restart();
+				}
+
+				@connection = "public"
+				protocol Chat {
+				    function send();
+				}
+				"""
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::duplicate-set"]}
+	}
+	"empty-list": {
+		about: "an empty list names no set and is refused, not read as a protocol left out (fix: name at least one set)"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = []\n", chat: "@connection = \"public\"\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::empty-list"]}
+	}
+	"non-string-value": {
+		about: "an annotation value that is neither a name nor a list of names is the annotation value error"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = 3\n", chat: "@connection = \"public\"\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["validation::annotation-value-mismatch"]}
+	}
 	"lockstep-left-out": {
 		about: "a lockstep datagram protocol runs on no connection, so it needn't be annotated once others are"
 		packages: app: {
@@ -250,18 +298,49 @@ groups: connection: {
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
 	}
 
-	// Sets need a handshake that compares protocol by protocol.
+	// Sets need a handshake that compares protocol by protocol and a framing
+	// that doesn't number protocols by position: comline@2 or later, datagram@3.
 	"old-wire-refused": {
-		about: "a set on comline@1 with datagram@2 is refused: a change in one set would refuse every set"
+		about: "a set on comline@1 with datagram@2 is refused: the handshake hashes the whole schema and the framing numbers by position (the message says both)"
 		packages: app: {
 			config: [_cnOldWire, _cnComline1]
 			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::needs-per-protocol-handshake"]}
+		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
+	}
+	"comline1-datagram3-refused": {
+		about: "a set on comline@1 is refused with any framing, here datagram@3: the handshake hashes the whole schema, so a change in one set would refuse every set (fix: comline@2)"
+		packages: app: {
+			config: [_cnComline1]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
+	}
+	"comline2-datagram2-refused": {
+		about: "a set on datagram@2 is refused with any handshake, here comline@2: the framing numbers protocols by position (fix: datagram@3)"
+		packages: app: {
+			config: [_cnOldWire, _cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
+	}
+	"handshake-none-refused": {
+		about: "a member with no handshake is refused in a set, though it says why it gives the handshake up: with no Hello nothing enforces the set"
+		packages: app: {
+			config: [_cnComline2, _allow]
+			schemas: api: (_cnPair & {
+				ops:  "@connection = \"admin\"\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\n"
+				chat: "@connection = \"public\"\n"
+			}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
 	}
 	"table-overrides-old-wire": {
-		about: "the check is per set: a package on the old wire can give its sets comline@2 and datagram@3 in the connections table"
+		about: "the check is per set: a package on the old wire can give its sets comline@2 and datagram@3 in the connections table, and is no error once every protocol is in a set"
 		packages: app: {
 			config: [_cnOldWire, _cnComline1, (_cnTable & {sets: [
 				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
@@ -281,7 +360,7 @@ groups: connection: {
 			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::needs-per-protocol-handshake"]}
+		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
 	}
 	"table-states-old-wire": {
 		about: "a set that states comline@1 with datagram@2 in the table is refused, whatever the package says"
@@ -292,10 +371,11 @@ groups: connection: {
 			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::needs-per-protocol-handshake"]}
+		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
 	}
 
-	// A member's own encodings agree with its set's.
+	// A member's own encodings agree with its set's. A set allows one framing
+	// (datagram@3), so the disagreement shown is the handshake's `exchange`.
 	"member-framing-agrees": {
 		about: "a member that pins the framing its set has is fine"
 		packages: app: {
@@ -307,25 +387,20 @@ groups: connection: {
 		build: "app"
 		expect: _cnBuilds
 	}
-	"member-framing-disagrees": {
-		about: "a member whose @framing isn't its set's is refused (fix: remove @framing, or change the set's)"
+	"member-handshake-agrees": {
+		about: "a member that writes out the handshake its set has, a default included, is fine"
 		packages: app: {
-			config: [_cnComline2, _cnFraming, (_cnTable & {sets: [
-				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
-			]}).text]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@framing = \"datagram@2\"\n", chat: "@connection = \"public\"\n"}).text
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::encoding-mismatch"]}
+		expect: _cnBuilds
 	}
 	"member-handshake-disagrees": {
-		about: "a member whose @handshake isn't its set's is refused, though it says why it gives the handshake up"
+		about: "a member whose @handshake isn't its set's, here another exchange, which both ends must agree on, is refused (fix: remove @handshake, or change the set's)"
 		packages: app: {
-			config: [_cnComline2, _allow]
-			schemas: api: (_cnPair & {
-				ops:  "@connection = \"admin\"\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\n"
-				chat: "@connection = \"public\"\n"
-			}).text
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::encoding-mismatch"]}
@@ -333,11 +408,11 @@ groups: connection: {
 
 	// A protocol in two sets.
 	"shared-unpinned": {
-		about: "a protocol in two sets whose framings differ takes each set's framing, so long as it pins none"
+		about: "a protocol in two sets whose handshakes differ in exchange takes each set's, so long as it pins none"
 		packages: app: {
 			config: [_cnComline2, (_cnTable & {sets: [
-				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
-				(_cnSet & {name: "public", framing: "datagram@2", handshake: "comline@2"}).text,
+				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2", exchange: "offer"}).text,
+				(_cnSet & {name: "public", framing: "datagram@3", handshake: "comline@2", exchange: "symmetric"}).text,
 			]}).text]
 			schemas: api: _cnShared
 		}
@@ -345,25 +420,25 @@ groups: connection: {
 		expect: {builds: true, protocols: {Health: given_up: [], Ops: given_up: [], Chat: given_up: []}}
 	}
 	"shared-pinned-differs": {
-		about: "a protocol in two sets whose framings differ can't pin @framing, though it matches one of them (fix: remove @framing)"
+		about: "a protocol in two sets whose handshakes differ can't pin one, though it matches one of the sets (fix: remove @handshake)"
 		packages: app: {
-			config: [_cnComline2, _cnFraming, (_cnTable & {sets: [
-				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
-				(_cnSet & {name: "public", framing: "datagram@2", handshake: "comline@2"}).text,
+			config: [_cnComline2, (_cnTable & {sets: [
+				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2", exchange: "offer"}).text,
+				(_cnSet & {name: "public", framing: "datagram@3", handshake: "comline@2", exchange: "symmetric"}).text,
 			]}).text]
-			schemas: api: "@framing = \"datagram@3\"\n" + _cnShared
+			schemas: api: "@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n" + _cnShared
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::encoding-mismatch"]}
 	}
 	"shared-pinned-same": {
-		about: "a protocol in two sets whose framings agree may pin the framing they have"
+		about: "a protocol in two sets whose handshakes agree may pin the handshake they have"
 		packages: app: {
-			config: [_cnComline2, _cnFraming, (_cnTable & {sets: [
+			config: [_cnComline2, (_cnTable & {sets: [
 				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
 				(_cnSet & {name: "public", framing: "datagram@3", handshake: "comline@2"}).text,
 			]}).text]
-			schemas: api: "@framing = \"datagram@3\"\n" + _cnShared
+			schemas: api: "@handshake = \"comline@2\"\n" + _cnShared
 		}
 		build: "app"
 		expect: {builds: true, protocols: {Health: given_up: [], Ops: given_up: [], Chat: given_up: []}}
@@ -393,19 +468,19 @@ groups: connection: {
 		expect: {builds: false, errors: ["connection::unknown-set"]}
 	}
 	"table-defaults-from-package": {
-		about: "a set the table states only a format for takes the package's framing: a member pinning it agrees"
+		about: "a set the table states only a format for takes the package's handshake, here exchange symmetric: a member writing it out agrees"
 		packages: app: {
-			config: [_cnOldWire, _cnComline2, _cnFraming, "connections = {\n    admin = { wire = { format = \"json@1\" } }\n}"]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@framing = \"datagram@2\"\n", chat: "@connection = \"public\"\n"}).text
+			config: ["handshake = { name = \"comline@2\" exchange = \"symmetric\" }", "connections = {\n    admin = { wire = { format = \"json@1\" } }\n}"]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
 	}
 	"table-defaults-mismatch": {
-		about: "a set the table states only a format for takes the package's framing, so a member pinning another one is refused"
+		about: "a set the table states only a format for takes the package's handshake, so a member writing another exchange is refused"
 		packages: app: {
-			config: [_cnOldWire, _cnComline2, _cnFraming, "connections = {\n    admin = { wire = { format = \"json@1\" } }\n}"]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@framing = \"datagram@3\"\n", chat: "@connection = \"public\"\n"}).text
+			config: ["handshake = { name = \"comline@2\" exchange = \"symmetric\" }", "connections = {\n    admin = { wire = { format = \"json@1\" } }\n}"]
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = \"public\"\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::encoding-mismatch"]}

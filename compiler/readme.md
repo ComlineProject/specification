@@ -137,7 +137,7 @@ cases with `dependencies`, which are in `acceptance` and `chain`.
 | `acceptance` | a dependency's unverified protocols accepted under it in `config.idp`: not at all, exactly, for less, for more; the reasons the consumer is shown; the dependency judged by its own package |
 | `imports` | where a `use` path starts: a package's own schemas only through `package::`, `parent::` or `self::` (a bare path to one is `import::bare-own-schema-path`, in each form of a `use`), a dependency's and `std`'s paths as they were, a path matching nothing (`import::unresolved`), a schema named like a dependency, and the names a dependency can't have |
 | `references` | how a type is named once imported, the Rust model: a whole-namespace `use` brings in only its name (`types::User`, and a bare `User` is `reference::not-in-scope`); a `use` of an item, `{...}` or `*` brings in the names it lists (and `types::User` after it is `reference::qualifier-not-in-scope`); a full path (`package::`, `parent::`, `self::`, `std::`, a dependency's) in a type position with no `use`; a path going down from a name in scope, a dependency's name included; a name defined twice (`reference::defined-twice`) and an alias resolving it; each spelling reaching the same type, and a package written before the rule unchanged |
-| `connection` | named connection sets (`@connection`): one name and a list, a protocol in two sets, and a package that never writes it; all or nothing (a protocol on a connection left out, in another schema too; a lockstep protocol needn't be annotated, and can't be); a set's name (snake_case, a keyword of any target, the connection module's own items); `comline@1` with `datagram@2` refused, per set; a member's `@framing` and `@handshake` agreeing with its set's, and a protocol in two sets pinning `@framing`; the `connections` table in `config.idp` (a set nothing uses, defaults from the package, a format per set); `annotations.connection.allowed = false` |
+| `connection` | named connection sets (`@connection`): one name and a list, a protocol in two sets, and a package that never writes it; all or nothing (a protocol on a connection left out, in another schema too; a lockstep protocol needn't be annotated, and can't be; a list naming a set twice, or none; a value that isn't a name); a set's name (snake_case, a keyword of any target, the connection module's own items); what a set needs of its encodings, `comline@2` or later with `datagram@3`, per set (`comline@1`, `datagram@2` and handshake `none` refused); a member's `@handshake` agreeing with its set's, and a protocol in two sets pinning one; the `connections` table in `config.idp` (a set nothing uses, defaults from the package, a format per set); `annotations.connection.allowed = false` |
 | `chain` | three packages, `c` depending on `b` depending on `a`: a type holding `a`'s unbounded value, used in `c`; and the acceptance resolving `b` asks for `a`'s protocols too |
 
 A case's `description` says what it shows, and for a refused reference the
@@ -174,26 +174,33 @@ Named sets of protocols, each with its own connection: `@connection = "admin"`
 on a protocol, or a list. The decision is
 [core#300](https://github.com/ComlineProject/core/issues/300) and
 [the proposal's answers](https://github.com/ComlineProject/docs/blob/main/docs/docs/proposals/named-connections/index.md#answers-so-far).
-The `connection` codes are **proposed**: they wait for the maintainer's
-confirmation, and a case holds a compiler to them only once they are.
+The `connection` codes are decided (core#300): one code a kind of error, and the reason in the message.
 
 | Code | When | Fix |
 | --- | --- | --- |
 | `connection::unassigned` | a protocol that runs on a connection has no `@connection`, in a package where another has | add `@connection`, or remove it from the others |
 | `connection::not-on-a-connection` | `@connection` on a protocol that runs on no connection (the lockstep `datagram`) | remove `@connection` |
 | `connection::bad-set-name` | a set's name that isn't lowercase `snake_case`, is a keyword of any target, or is a name the connection module has (`serve`, `connect`, `accept`, `services`, ...); the message says which | rename the set |
-| `connection::needs-per-protocol-handshake` | a set whose handshake and framing, its own or the package's, are `comline@1` and `datagram@2`: it numbers protocols by position and hashes every schema, so a change in one set would refuse every set | give the set `comline@2` and `datagram@3` in `connections` |
-| `connection::encoding-mismatch` | a member's `@framing` or `@handshake` that isn't its set's, or a protocol in two sets whose framings differ that pins `@framing` | remove the member's own, or change the set's |
+| `connection::unsupported-encoding` | a set whose handshake or framing, its own or the package's, can't have sets; the message says which part. A set needs a handshake that compares protocol by protocol and a framing whose protocol numbers don't depend on position: `comline@2` or later with `datagram@3`. Refused are `comline@1` with any framing (it hashes the whole schema, so a change in one set would refuse every set), `datagram@2` with any handshake (it numbers by position) and handshake `none` (no Hello, so nothing enforces the set) | give the set `comline@2` and `datagram@3` in `connections` |
+| `connection::encoding-mismatch` | a member's `@framing` or `@handshake` that isn't its set's, which includes a protocol in two sets whose encodings differ that pins one | remove the member's own, or change the set's |
 | `connection::unknown-set` | the `connections` table in `config.idp` names a set no protocol uses | remove the entry, or annotate a protocol |
+| `connection::duplicate-set` | a list that names a set twice | name it once |
+| `connection::empty-list` | `@connection = []`: it names no set (and isn't read as a protocol left out) | name at least one set |
 
 A forbidden `@connection` (`annotations.connection.allowed = false`) is
-`settings::forbidden`, as for any annotation: sets need no new key. A set's
-encodings default to the package's `wire` and `handshake`, and the cases state
-the package's `handshake` wherever it matters, since its default depends on
-the protocols' framings. The cases hold what the epic decides; they don't state
-which other pairs of encodings fail the rule (only `comline@1` with
-`datagram@2` is decided), nor what a framing addressing calls by name needs
-within a set (core#300 decides the rule, and no case states it yet).
+`settings::forbidden`, as for any annotation: sets need no new key. A
+`@connection` value that is neither a name nor a list of names is the existing
+`validation::annotation-value-mismatch`. A set's encodings default to the
+package's `wire` and `handshake`, and the cases state the package's `handshake`
+wherever it matters, since its default depends on the protocols' framings. A
+package's wire that no set uses is no error once every protocol is in a set.
+
+A set allows one framing, `datagram@3`, so two sets can't differ in framing, nor
+can a member's `@framing` differ from its set's without being refused as
+unsupported on its own; the cases show a member's disagreement with its set,
+and a protocol in two sets pinning one, through the handshake's `exchange`,
+which both ends must agree on. A framing that addresses calls by name
+(JSON-RPC) runs on `comline@1`, so it can't have sets and needs no case.
 
 The `connection` group is ahead of core, like `references`: core#301
 implements it, and core's runner fails these cases until then.

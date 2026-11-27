@@ -146,7 +146,7 @@
                     "severity": "error"
                 },
                 {
-                    "code": "connection::needs-per-protocol-handshake",
+                    "code": "connection::unsupported-encoding",
                     "severity": "error"
                 },
                 {
@@ -155,6 +155,18 @@
                 },
                 {
                     "code": "connection::unknown-set",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::duplicate-set",
+                    "severity": "error"
+                },
+                {
+                    "code": "connection::empty-list",
+                    "severity": "error"
+                },
+                {
+                    "code": "validation::annotation-value-mismatch",
                     "severity": "error"
                 }
             ]

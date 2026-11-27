@@ -225,6 +225,87 @@
             }
         },
         {
+            "id": "connection/duplicate-set",
+            "description": "a set named twice in one list is refused (fix: name it once)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = [\"admin\", \"admin\"]\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "connection::duplicate-set",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "connection/empty-list",
+            "description": "an empty list names no set and is refused, not read as a protocol left out (fix: name at least one set)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = []\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "connection::empty-list",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "connection/non-string-value",
+            "description": "an annotation value that is neither a name nor a list of names is the annotation value error",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = 3\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "validation::annotation-value-mismatch",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
             "id": "connection/lockstep-left-out",
             "description": "a lockstep datagram protocol runs on no connection, so it needn't be annotated once others are",
             "packages": [
@@ -447,7 +528,7 @@
         },
         {
             "id": "connection/old-wire-refused",
-            "description": "a set on comline@1 with datagram@2 is refused: a change in one set would refuse every set",
+            "description": "a set on comline@1 with datagram@2 is refused: the handshake hashes the whole schema and the framing numbers by position (the message says both)",
             "packages": [
                 {
                     "name": "app",
@@ -466,7 +547,88 @@
                 "builds": false,
                 "diagnostics": [
                     {
-                        "code": "connection::needs-per-protocol-handshake",
+                        "code": "connection::unsupported-encoding",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "connection/comline1-datagram3-refused",
+            "description": "a set on comline@1 is refused with any framing, here datagram@3: the handshake hashes the whole schema, so a change in one set would refuse every set (fix: comline@2)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@1\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "connection::unsupported-encoding",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "connection/comline2-datagram2-refused",
+            "description": "a set on datagram@2 is refused with any handshake, here comline@2: the framing numbers protocols by position (fix: datagram@3)",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nwire = { framing = \"datagram@2\" }\nhandshake = \"comline@2\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "connection::unsupported-encoding",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "connection/handshake-none-refused",
+            "description": "a member with no handshake is refused in a set, though it says why it gives the handshake up: with no Hello nothing enforces the set",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nsettings = { annotations = { unverified = { allowed = true } } }\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = \"admin\"\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "connection::unsupported-encoding",
                         "severity": "error"
                     }
                 ]
@@ -474,7 +636,7 @@
         },
         {
             "id": "connection/table-overrides-old-wire",
-            "description": "the check is per set: a package on the old wire can give its sets comline@2 and datagram@3 in the connections table",
+            "description": "the check is per set: a package on the old wire can give its sets comline@2 and datagram@3 in the connections table, and is no error once every protocol is in a set",
             "packages": [
                 {
                     "name": "app",
@@ -525,7 +687,7 @@
                 "builds": false,
                 "diagnostics": [
                     {
-                        "code": "connection::needs-per-protocol-handshake",
+                        "code": "connection::unsupported-encoding",
                         "severity": "error"
                     }
                 ]
@@ -552,7 +714,7 @@
                 "builds": false,
                 "diagnostics": [
                     {
-                        "code": "connection::needs-per-protocol-handshake",
+                        "code": "connection::unsupported-encoding",
                         "severity": "error"
                     }
                 ]
@@ -591,16 +753,16 @@
             }
         },
         {
-            "id": "connection/member-framing-disagrees",
-            "description": "a member whose @framing isn't its set's is refused (fix: remove @framing, or change the set's)",
+            "id": "connection/member-handshake-agrees",
+            "description": "a member that writes out the handshake its set has, a default included, is fine",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nsettings = { annotations = { framing = { allowed = true } } }\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n}\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@framing = \"datagram@2\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -608,26 +770,31 @@
             ],
             "build": "app",
             "expect": {
-                "builds": false,
-                "diagnostics": [
+                "protocols": [
                     {
-                        "code": "connection::encoding-mismatch",
-                        "severity": "error"
+                        "name": "Ops",
+                        "given_up": []
+                    },
+                    {
+                        "name": "Chat",
+                        "given_up": []
                     }
-                ]
+                ],
+                "builds": true,
+                "diagnostics": []
             }
         },
         {
             "id": "connection/member-handshake-disagrees",
-            "description": "a member whose @handshake isn't its set's is refused, though it says why it gives the handshake up",
+            "description": "a member whose @handshake isn't its set's, here another exchange, which both ends must agree on, is refused (fix: remove @handshake, or change the set's)",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nsettings = { annotations = { unverified = { allowed = true } } }\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -646,11 +813,11 @@
         },
         {
             "id": "connection/shared-unpinned",
-            "description": "a protocol in two sets whose framings differ takes each set's framing, so long as it pins none",
+            "description": "a protocol in two sets whose handshakes differ in exchange takes each set's, so long as it pins none",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n    public = { wire = { framing = \"datagram@2\" } handshake = { name = \"comline@2\" } }\n}\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" exchange = \"offer\" } }\n    public = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" exchange = \"symmetric\" } }\n}\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
@@ -682,15 +849,15 @@
         },
         {
             "id": "connection/shared-pinned-differs",
-            "description": "a protocol in two sets whose framings differ can't pin @framing, though it matches one of them (fix: remove @framing)",
+            "description": "a protocol in two sets whose handshakes differ can't pin one, though it matches one of the sets (fix: remove @handshake)",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nsettings = { annotations = { framing = { allowed = true } } }\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n    public = { wire = { framing = \"datagram@2\" } handshake = { name = \"comline@2\" } }\n}\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" exchange = \"offer\" } }\n    public = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" exchange = \"symmetric\" } }\n}\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@framing = \"datagram@3\"\n@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -709,15 +876,15 @@
         },
         {
             "id": "connection/shared-pinned-same",
-            "description": "a protocol in two sets whose framings agree may pin the framing they have",
+            "description": "a protocol in two sets whose handshakes agree may pin the handshake they have",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nsettings = { annotations = { framing = { allowed = true } } }\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n    public = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n}\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\nconnections = {\n    admin = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n    public = { wire = { framing = \"datagram@3\" } handshake = { name = \"comline@2\" } }\n}\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@framing = \"datagram@3\"\n@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@handshake = \"comline@2\"\n@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -799,15 +966,15 @@
         },
         {
             "id": "connection/table-defaults-from-package",
-            "description": "a set the table states only a format for takes the package's framing: a member pinning it agrees",
+            "description": "a set the table states only a format for takes the package's handshake, here exchange symmetric: a member writing it out agrees",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nwire = { framing = \"datagram@2\" }\nhandshake = \"comline@2\"\nsettings = { annotations = { framing = { allowed = true } } }\nconnections = {\n    admin = { wire = { format = \"json@1\" } }\n}\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = { name = \"comline@2\" exchange = \"symmetric\" }\nconnections = {\n    admin = { wire = { format = \"json@1\" } }\n}\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@framing = \"datagram@2\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -831,15 +998,15 @@
         },
         {
             "id": "connection/table-defaults-mismatch",
-            "description": "a set the table states only a format for takes the package's framing, so a member pinning another one is refused",
+            "description": "a set the table states only a format for takes the package's handshake, so a member writing another exchange is refused",
             "packages": [
                 {
                     "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nwire = { framing = \"datagram@2\" }\nhandshake = \"comline@2\"\nsettings = { annotations = { framing = { allowed = true } } }\nconnections = {\n    admin = { wire = { format = \"json@1\" } }\n}\n",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = { name = \"comline@2\" exchange = \"symmetric\" }\nconnections = {\n    admin = { wire = { format = \"json@1\" } }\n}\n",
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@framing = \"datagram@3\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
