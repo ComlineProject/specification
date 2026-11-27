@@ -128,7 +128,9 @@ pub struct Value {
 /// A fact an encoding's profile states. A handshake's fact that names a
 /// guarantee in `establishes` is a boolean (`"true"`, `"false"`), and `true`
 /// establishes it; its other facts (`schema_comparison`) take the values they
-/// list, like a format's and a framing's.
+/// list, like a format's and a framing's. A fact with a `default` may be left
+/// out of a profile, which then reads as that value: a handshake profile
+/// without `schema_comparison` is `whole_schema`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Fact {
     pub id: &'static str,
@@ -137,6 +139,8 @@ pub struct Fact {
     pub description: &'static str,
     pub values: &'static [Value],
     pub establishes: Option<&'static str>,
+    /// What a profile that doesn't state the fact is read as: one of `values`.
+    pub default: Option<&'static str>,
     pub status: Status,
     pub replaced_by: Option<&'static str>,
     pub since: Option<&'static str>,
@@ -546,6 +550,11 @@ mod tests {
         assert!(comparison.establishes.is_none());
         assert!(comparison.allows("per_protocol") && comparison.allows("whole_schema"));
         assert!(!comparison.allows("true"));
+        assert_eq!(comparison.default, Some("whole_schema"));
+        assert!(comparison.allows(comparison.default.unwrap()));
+        for f in FACTS.iter().filter(|f| f.id != fact::SCHEMA_COMPARISON) {
+            assert!(f.default.is_none(), "{}", f.id);
+        }
     }
 
     #[test]

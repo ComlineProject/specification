@@ -37,7 +37,9 @@ import "list"
 // A fact an encoding's profile states, with every value it may take and
 // what each means. A handshake's fact that names a guarantee in
 // `establishes` is a boolean: `true` establishes it. A handshake's other
-// facts take the values they list, like a format's and a framing's.
+// facts take the values they list, like a format's and a framing's. A fact
+// with a `default` may be left out of a profile, which then reads as the
+// default.
 #Fact: close({
 	#Lifecycle
 	applies_to!:  "format" | "framing" | "handshake"
@@ -45,6 +47,8 @@ import "list"
 	description!: string
 	values!: {[string]: string}
 	establishes?: or([for id, _ in guarantees {id}])
+	// What a profile that leaves the fact out is read as: one of `values`.
+	default?: or([for v, _ in values {v}])
 })
 
 // An official encoding, by its wire name: the spelling the handshake

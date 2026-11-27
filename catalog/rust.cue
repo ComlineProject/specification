@@ -170,6 +170,7 @@ rust_catalog: """
 				description: \((_rust.str & {#in: f.description}).out),
 				values: &[\(strings.Join([for v, meaning in f.values {"Value { id: \((_rust.str & {#in: v}).out), meaning: \((_rust.str & {#in: meaning}).out) }"}], ", "))],
 				establishes: \((_rust.opt & {#in: [if f.establishes != _|_ {f.establishes}, null][0]}).out),
+				default: \((_rust.opt & {#in: [if f.default != _|_ {f.default}, null][0]}).out),
 		\((_rust.lifecycle & {#in: f}).out)
 			},
 		"""}], "\n"))

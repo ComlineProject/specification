@@ -240,8 +240,9 @@ What an implementation answers, and how its answers are judged:
   `comline@1`). Sets of protocols need `per_protocol`, and a tool reads that
   from the fact, not from the handshake's name. Unlike `schema_agreement` and
   `encoding_agreement` it isn't a boolean: it takes the values the catalog
-  lists, and a handshake profile has to state it, as a framing states every
-  fact. `none` has no profile and is unchanged. No vector, case or byte
+  lists. A handshake profile may leave it out, which reads as its default,
+  `whole_schema` (such a handshake can't carry sets, and nothing that loads
+  today breaks); `comline@1` and `comline@2` state it. `none` has no profile and is unchanged. No vector, case or byte
   changes. `comline@2` shows `per_protocol` by `offer-accept` and
   `offer-line-mismatch` (one protocol refused alone, the other accepted);
   `comline@1` shows `whole_schema` by `handshake/check-agree` and
@@ -479,7 +480,7 @@ about how it encodes, which the version comparison turns into bumps. A format
 states `struct_fields`, `unknown_field`, `missing_optional`, `enum_variants`,
 `unknown_variant`, `integer_width` and `output`, and may state `sizes`; a framing states `calls`,
 `directions`, `errors` and `payload`; a handshake states `schema_agreement`
-and `encoding_agreement` (booleans) and `schema_comparison`. The catalog gives each fact's values and
+and `encoding_agreement` (booleans) and, optionally, `schema_comparison`. The catalog gives each fact's values and
 what they mean ([`catalog/facts.cue`](catalog/facts.cue)).
 
 `payload` says what a framing needs of a payload, and `output` what a format
