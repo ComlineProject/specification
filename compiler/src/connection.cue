@@ -7,12 +7,14 @@ import "strings"
 // encodings). Decision: ComlineProject/core#300, and
 // https://comlineproject.github.io/docs/proposals/named-connections/#answers-so-far
 //
-//   - `@connection = "admin"` on a protocol, or a list
-//     (`@connection = ["admin", "public"]`): a protocol may be in several sets.
+//   - `@connection = admin` on a protocol, or a list
+//     (`@connection = [admin, public]`): a protocol may be in several sets.
 //   - All or nothing: with no protocol annotated nothing changes. Once one is,
 //     every protocol that runs on a connection must be, and `@connection` on a
 //     protocol that runs on no connection (the lockstep `datagram`) is an error.
-//   - A set's name is lowercase `snake_case`; a keyword of any target and the
+//   - A set is named by a bare identifier, never a string, and its name is
+//     lowercase `snake_case` (a name with a hyphen isn't an identifier, so
+//     no case writes one); a keyword of any target and the
 //     connection module's own item names (`serve`, `connect`, `accept`,
 //     `services`, ...) are refused, with an error that says why.
 //   - Each set's encodings are checked on their own. `config.idp` may state a
@@ -104,7 +106,7 @@ groups: connection: {
 		about: "@connection with one name puts each protocol in its own set"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -114,17 +116,17 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2]
 			schemas: api: """
-				@connection = ["admin", "public"]
+				@connection = [admin, public]
 				protocol Health {
 				    function ping();
 				}
 
-				@connection = "admin"
+				@connection = admin
 				protocol Ops {
 				    function restart();
 				}
 
-				@connection = "public"
+				@connection = public
 				protocol Chat {
 				    function send();
 				}
@@ -137,7 +139,7 @@ groups: connection: {
 		about: "a set's name is lowercase snake_case: letters, digits and underscores"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin_api2\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin_api2\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -148,7 +150,7 @@ groups: connection: {
 		about: "one protocol annotated and another on a connection left out: nothing reaches a connection without a decision (fix: add @connection to Chat)"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: ""}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: ""}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unassigned"]}
@@ -158,7 +160,7 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2]
 			schemas: {
-				admin: "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}"
+				admin: "@connection = admin\nprotocol Ops {\n    function restart();\n}"
 				chat:  "protocol Chat {\n    function send();\n}"
 			}
 		}
@@ -170,12 +172,12 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2]
 			schemas: api: """
-				@connection = ["admin", "admin"]
+				@connection = [admin, admin]
 				protocol Ops {
 				    function restart();
 				}
 
-				@connection = "public"
+				@connection = public
 				protocol Chat {
 				    function send();
 				}
@@ -188,16 +190,25 @@ groups: connection: {
 		about: "an empty list names no set and is refused, not read as a protocol left out (fix: name at least one set)"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = []\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = []\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::empty-list"]}
 	}
-	"non-string-value": {
-		about: "an annotation value that is neither a name nor a list of names is the annotation value error"
+	"quoted-name": {
+		about: "a set is named by a bare identifier, never a string: @connection = \"admin\" is the annotation value error (core may hint to drop the quotes; the case holds the code only)"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = 3\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = public\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["validation::annotation-value-mismatch"]}
+	}
+	"not-a-name": {
+		about: "an annotation value that is neither a name nor a list of names, here a number, is the annotation value error"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = 3\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["validation::annotation-value-mismatch"]}
@@ -207,7 +218,7 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2, _cnFraming]
 			schemas: api: """
-				@connection = "admin"
+				@connection = admin
 				protocol Ops {
 				    function restart();
 				}
@@ -227,12 +238,12 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2, _cnFraming]
 			schemas: api: """
-				@connection = "admin"
+				@connection = admin
 				protocol Ops {
 				    function restart();
 				}
 
-				@connection = "admin"
+				@connection = admin
 				@framing = "datagram"
 				@handshake = "comline@1"
 				protocol Dump {
@@ -249,16 +260,7 @@ groups: connection: {
 		about: "a set's name that isn't lowercase is refused (fix: admin)"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"Admin\"\n", chat: "@connection = \"public\"\n"}).text
-		}
-		build: "app"
-		expect: {builds: false, errors: ["connection::bad-set-name"]}
-	}
-	"name-hyphen": {
-		about: "a set's name with a hyphen isn't snake_case and is refused (fix: admin_api)"
-		packages: app: {
-			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin-api\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = Admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
@@ -267,7 +269,7 @@ groups: connection: {
 		about: "a set named like a Rust keyword is refused: it would be a module of that name"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"loop\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = loop\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
@@ -276,7 +278,7 @@ groups: connection: {
 		about: "a set named like a TypeScript keyword, not a Rust one, is refused too: a keyword of any target"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"interface\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = interface\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
@@ -285,7 +287,7 @@ groups: connection: {
 		about: "a set named serve would collide with the connection module's own serve and is refused"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"serve\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = serve\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
@@ -294,7 +296,7 @@ groups: connection: {
 		about: "a set named services would collide with the connection module's own services and is refused"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"services\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = services\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
@@ -306,7 +308,7 @@ groups: connection: {
 		about: "a set on comline@1 with datagram@2 is refused: the handshake hashes the whole schema and the framing numbers by position (the message says both)"
 		packages: app: {
 			config: [_cnOldWire, _cnComline1]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
@@ -315,7 +317,7 @@ groups: connection: {
 		about: "a set on comline@1 is refused with any framing, here datagram@3: the handshake hashes the whole schema, so a change in one set would refuse every set (fix: comline@2)"
 		packages: app: {
 			config: [_cnComline1]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
@@ -324,7 +326,7 @@ groups: connection: {
 		about: "a set on datagram@2 is refused with any handshake, here comline@2: the framing numbers protocols by position (fix: datagram@3)"
 		packages: app: {
 			config: [_cnOldWire, _cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
@@ -334,8 +336,8 @@ groups: connection: {
 		packages: app: {
 			config: [_cnComline2, _allow]
 			schemas: api: (_cnPair & {
-				ops:  "@connection = \"admin\"\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\n"
-				chat: "@connection = \"public\"\n"
+				ops:  "@connection = admin\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\n"
+				chat: "@connection = public\n"
 			}).text
 		}
 		build: "app"
@@ -348,7 +350,7 @@ groups: connection: {
 				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
 				(_cnSet & {name: "public", framing: "datagram@3", handshake: "comline@2"}).text,
 			]}).text]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -359,7 +361,7 @@ groups: connection: {
 			config: [_cnOldWire, _cnComline1, (_cnTable & {sets: [
 				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
 			]}).text]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
@@ -370,7 +372,7 @@ groups: connection: {
 			config: [_cnComline2, (_cnTable & {sets: [
 				(_cnSet & {name: "admin", framing: "datagram@2", handshake: "comline@1"}).text,
 			]}).text]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unsupported-encoding"]}
@@ -384,7 +386,7 @@ groups: connection: {
 			config: [_cnComline2, _cnFraming, (_cnTable & {sets: [
 				(_cnSet & {name: "admin", framing: "datagram@3", handshake: "comline@2"}).text,
 			]}).text]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@framing = \"datagram@3\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n@framing = \"datagram@3\"\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -393,7 +395,7 @@ groups: connection: {
 		about: "a member that writes out the handshake its set has, a default included, is fine"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -402,7 +404,7 @@ groups: connection: {
 		about: "a member's @handshake may differ from its set's in a policy parameter (scope, newer_consumer, same_version_differs), which isn't on the wire: only the name and the wire parameters (exchange) must match"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , scope = \"package\" , newer_consumer = \"refuse\" }\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n@handshake = { name = \"comline@2\" , scope = \"package\" , newer_consumer = \"refuse\" }\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -411,7 +413,7 @@ groups: connection: {
 		about: "a member whose @handshake isn't its set's, here another exchange, which both ends must agree on, is refused (fix: remove @handshake, or change the set's)"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::encoding-mismatch"]}
@@ -462,7 +464,7 @@ groups: connection: {
 			config: [_cnComline2, (_cnTable & {sets: [
 				(_cnSet & {name: "reports", framing: "datagram@3", handshake: "comline@2"}).text,
 			]}).text]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::unknown-set"]}
@@ -482,7 +484,7 @@ groups: connection: {
 		about: "a set the table states only a format for takes the package's handshake, here exchange symmetric: a member writing it out agrees"
 		packages: app: {
 			config: ["handshake = { name = \"comline@2\" exchange = \"symmetric\" }", "connections = {\n    admin = { wire = { format = \"json@1\" } }\n}"]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -491,7 +493,7 @@ groups: connection: {
 		about: "a set the table states only a format for takes the package's handshake, so a member writing another exchange is refused"
 		packages: app: {
 			config: ["handshake = { name = \"comline@2\" exchange = \"symmetric\" }", "connections = {\n    admin = { wire = { format = \"json@1\" } }\n}"]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["connection::encoding-mismatch"]}
@@ -500,7 +502,7 @@ groups: connection: {
 		about: "each set may state its own format, which is package-wide without sets"
 		packages: app: {
 			config: [_cnComline2, "connections = {\n    admin = { wire = { format = \"json@1\" } }\n    public = { wire = { format = \"msgpack@1\" } }\n}"]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: _cnBuilds
@@ -511,7 +513,7 @@ groups: connection: {
 		about: "annotations.connection.allowed = false refuses @connection"
 		packages: app: {
 			config: [_cnComline2, "settings = { annotations = { connection = { allowed = false } } }"]
-			schemas: api: (_cnPair & {ops: "@connection = \"admin\"\n", chat: "@connection = \"public\"\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
 		expect: {builds: false, errors: ["settings::forbidden"]}
@@ -530,17 +532,17 @@ groups: connection: {
 // A health check in both sets beside a protocol of each, for the cases whose
 // outcome is about a protocol in two sets.
 _cnShared: """
-	@connection = ["admin", "public"]
+	@connection = [admin, public]
 	protocol Health {
 	    function ping();
 	}
 
-	@connection = "admin"
+	@connection = admin
 	protocol Ops {
 	    function restart();
 	}
 
-	@connection = "public"
+	@connection = public
 	protocol Chat {
 	    function send();
 	}

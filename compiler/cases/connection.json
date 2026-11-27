@@ -76,7 +76,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -108,7 +108,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = [admin, public]\nprotocol Health {\n    function ping();\n}\n\n@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -144,7 +144,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin_api2\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin_api2\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -176,7 +176,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -203,7 +203,7 @@
                     "schemas": [
                         {
                             "path": "src/admin.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n"
                         },
                         {
                             "path": "src/chat.ids",
@@ -234,7 +234,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = [\"admin\", \"admin\"]\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = [admin, admin]\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -261,7 +261,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = []\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = []\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -279,8 +279,8 @@
             }
         },
         {
-            "id": "connection/non-string-value",
-            "description": "an annotation value that is neither a name nor a list of names is the annotation value error",
+            "id": "connection/quoted-name",
+            "description": "a set is named by a bare identifier, never a string: @connection = \"admin\" is the annotation value error (core may hint to drop the quotes; the case holds the code only)",
             "packages": [
                 {
                     "name": "app",
@@ -288,7 +288,34 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = 3\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
+                        }
+                    ],
+                    "dependencies": []
+                }
+            ],
+            "build": "app",
+            "expect": {
+                "builds": false,
+                "diagnostics": [
+                    {
+                        "code": "validation::annotation-value-mismatch",
+                        "severity": "error"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "connection/not-a-name",
+            "description": "an annotation value that is neither a name nor a list of names, here a number, is the annotation value error",
+            "packages": [
+                {
+                    "name": "app",
+                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
+                    "schemas": [
+                        {
+                            "path": "src/api.ids",
+                            "text": "@connection = 3\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -315,7 +342,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@framing = \"datagram\"\n@handshake = \"comline@1\"\nprotocol Dump {\n    function put();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@framing = \"datagram\"\n@handshake = \"comline@1\"\nprotocol Dump {\n    function put();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -347,7 +374,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"admin\"\n@framing = \"datagram\"\n@handshake = \"comline@1\"\nprotocol Dump {\n    function put();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = admin\n@framing = \"datagram\"\n@handshake = \"comline@1\"\nprotocol Dump {\n    function put();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -374,34 +401,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"Admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
-                        }
-                    ],
-                    "dependencies": []
-                }
-            ],
-            "build": "app",
-            "expect": {
-                "builds": false,
-                "diagnostics": [
-                    {
-                        "code": "connection::bad-set-name",
-                        "severity": "error"
-                    }
-                ]
-            }
-        },
-        {
-            "id": "connection/name-hyphen",
-            "description": "a set's name with a hyphen isn't snake_case and is refused (fix: admin_api)",
-            "packages": [
-                {
-                    "name": "app",
-                    "config": "congregation app\nspecification_version = 1\nhandshake = \"comline@2\"\n",
-                    "schemas": [
-                        {
-                            "path": "src/api.ids",
-                            "text": "@connection = \"admin-api\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = Admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -428,7 +428,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"loop\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = loop\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -455,7 +455,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"interface\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = interface\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -482,7 +482,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"serve\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = serve\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -509,7 +509,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"services\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = services\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -536,7 +536,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -563,7 +563,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -590,7 +590,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -617,7 +617,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@handshake = \"none\"\n@unverified = \"the admin console predates Comline\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -644,7 +644,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -676,7 +676,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -703,7 +703,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -730,7 +730,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@framing = \"datagram@3\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@framing = \"datagram@3\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -762,7 +762,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -794,7 +794,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , scope = \"package\" , newer_consumer = \"refuse\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@handshake = { name = \"comline@2\" , scope = \"package\" , newer_consumer = \"refuse\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -826,7 +826,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -853,7 +853,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = [admin, public]\nprotocol Health {\n    function ping();\n}\n\n@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -889,7 +889,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@handshake = { name = \"comline@2\" , exchange = \"offer\" }\n@connection = [admin, public]\nprotocol Health {\n    function ping();\n}\n\n@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -916,7 +916,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@handshake = \"comline@2\"\n@connection = [\"admin\", \"public\"]\nprotocol Health {\n    function ping();\n}\n\n@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@handshake = \"comline@2\"\n@connection = [admin, public]\nprotocol Health {\n    function ping();\n}\n\n@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -952,7 +952,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -1006,7 +1006,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"symmetric\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -1038,7 +1038,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\n@handshake = { name = \"comline@2\" , exchange = \"offer\" }\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -1065,7 +1065,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
@@ -1097,7 +1097,7 @@
                     "schemas": [
                         {
                             "path": "src/api.ids",
-                            "text": "@connection = \"admin\"\nprotocol Ops {\n    function restart();\n}\n\n@connection = \"public\"\nprotocol Chat {\n    function send();\n}\n"
+                            "text": "@connection = admin\nprotocol Ops {\n    function restart();\n}\n\n@connection = public\nprotocol Chat {\n    function send();\n}\n"
                         }
                     ],
                     "dependencies": []
