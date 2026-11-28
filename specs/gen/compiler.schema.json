@@ -146,6 +146,10 @@
                     "severity": "error"
                 },
                 {
+                    "code": "connection::name-taken",
+                    "severity": "error"
+                },
+                {
                     "code": "connection::unsupported-encoding",
                     "severity": "error"
                 },

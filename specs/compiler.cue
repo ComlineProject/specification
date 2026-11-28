@@ -113,6 +113,7 @@ import "github.com/comlineproject/specification/catalog"
 	close({code!: "connection::unassigned", severity!: "error"}),
 	close({code!: "connection::not-on-a-connection", severity!: "error"}),
 	close({code!: "connection::bad-set-name", severity!: "error"}),
+	close({code!: "connection::name-taken", severity!: "error"}),
 	close({code!: "connection::unsupported-encoding", severity!: "error"}),
 	close({code!: "connection::encoding-mismatch", severity!: "error"}),
 	close({code!: "connection::unknown-set", severity!: "error"}),
