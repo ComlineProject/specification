@@ -6,7 +6,7 @@ proven, the formats of these files, and the catalog of names they share. A runti
 tool implements against this repository, and pins it like any other
 dependency. Comline's own runtimes do the same.
 
-Version: **0.14** ([`VERSION`](VERSION)). While Comline is in its early days
+Version: **0.15** ([`VERSION`](VERSION)). While Comline is in its early days
 (0.x), a minor version may change anything, and the change is named in the
 pull request that makes it and in [the changes](#changes) below.
 
@@ -233,6 +233,21 @@ What an implementation answers, and how its answers are judged:
 
 ### Changes
 
+- **0.15:** set names in the `connection` compiler cases (named connection
+  sets, core#300): generated code always names a set `<set>` + "connection" in
+  the target's casing (`public_connection`, `PublicConnection`), never
+  escaped, so core keeps no keyword lists for sets. `connection::bad-set-name`
+  now means only a name that isn't lowercase snake_case, a trailing or doubled
+  underscore included (new cases `name-trailing-underscore`,
+  `name-double-underscore`). The cases that refused a keyword or a
+  connection-module item as a set name (`name-keyword-rust`,
+  `name-keyword-typescript`, `name-module-item-serve`,
+  `name-module-item-services`) now build, with `name-keyword-python` and
+  `name-keyword-lua`. New code `connection::name-taken`: a set whose generated
+  name is already a name in the package, a schema `<set>_connection`
+  (`name-taken-schema`) or a protocol `<Set>Connection`
+  (`name-taken-protocol`), with `name-not-taken` for names that only look alike.
+  No vector or byte changes.
 - **0.14:** a handshake states `schema_comparison` (named connection sets,
   core#300): what it compares to judge two ends' schemas, `per_protocol` (each
   protocol on its own, by its line and shape: `comline@2`) or `whole_schema`

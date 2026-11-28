@@ -14,9 +14,14 @@ import "strings"
 //     protocol that runs on no connection (the lockstep `datagram`) is an error.
 //   - A set is named by a bare identifier, never a string, and its name is
 //     lowercase `snake_case` (a name with a hyphen isn't an identifier, so
-//     no case writes one); a keyword of any target and the
-//     connection module's own item names (`serve`, `connect`, `accept`,
-//     `services`, ...) are refused, with an error that says why.
+//     no case writes one; a trailing or doubled underscore is refused).
+//     Generated code always names a set `<set>` + "connection" in the
+//     target's casing (`public_connection`, `PublicConnection`), never
+//     escaped, so a keyword of a target and the connection module's own item
+//     names (`serve`, `services`, ...) are fine as set names, and there are no
+//     keyword lists. A set whose generated name is already a name in the
+//     package (a schema `<set>_connection`, a protocol `<Set>Connection`) is
+//     refused (`connection::name-taken`).
 //   - Each set's encodings are checked on their own. `config.idp` may state a
 //     set's own in a top-level `connections` table, defaulting to the package's
 //     `wire` and `handshake`. A member's own `@handshake` (and `@framing`) must
@@ -265,41 +270,134 @@ groups: connection: {
 		build: "app"
 		expect: {builds: false, errors: ["connection::bad-set-name"]}
 	}
+	"name-trailing-underscore": {
+		about: "a set's name ending in an underscore isn't lowercase snake_case and is refused (fix: admin)"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = admin_\n", chat: "@connection = public\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::bad-set-name"]}
+	}
+	"name-double-underscore": {
+		about: "a set's name with a doubled underscore isn't lowercase snake_case and is refused (fix: admin_api)"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = admin__api\n", chat: "@connection = public\n"}).text
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::bad-set-name"]}
+	}
+	// Generated code names a set `<set>_connection`, never escaped, so a name
+	// that is a keyword somewhere, or an item of the connection module, builds.
 	"name-keyword-rust": {
-		about: "a set named like a Rust keyword is refused: it would be a module of that name"
+		about: "a set named like a Rust keyword builds: the generated name is loop_connection, never escaped"
 		packages: app: {
 			config: [_cnComline2]
 			schemas: api: (_cnPair & {ops: "@connection = loop\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::bad-set-name"]}
+		expect: _cnBuilds
 	}
 	"name-keyword-typescript": {
-		about: "a set named like a TypeScript keyword, not a Rust one, is refused too: a keyword of any target"
+		about: "a set named like a TypeScript keyword, not a Rust one, builds"
 		packages: app: {
 			config: [_cnComline2]
 			schemas: api: (_cnPair & {ops: "@connection = interface\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::bad-set-name"]}
+		expect: _cnBuilds
+	}
+	"name-keyword-python": {
+		about: "a set named like a Python keyword builds"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = lambda\n", chat: "@connection = public\n"}).text
+		}
+		build: "app"
+		expect: _cnBuilds
+	}
+	"name-keyword-lua": {
+		about: "a set named like a Lua keyword builds"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: (_cnPair & {ops: "@connection = end\n", chat: "@connection = public\n"}).text
+		}
+		build: "app"
+		expect: _cnBuilds
 	}
 	"name-module-item-serve": {
-		about: "a set named serve would collide with the connection module's own serve and is refused"
+		about: "a set named serve builds: the generated name is serve_connection, which is not the connection module's serve"
 		packages: app: {
 			config: [_cnComline2]
 			schemas: api: (_cnPair & {ops: "@connection = serve\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::bad-set-name"]}
+		expect: _cnBuilds
 	}
 	"name-module-item-services": {
-		about: "a set named services would collide with the connection module's own services and is refused"
+		about: "a set named services builds: the generated name is services_connection, which is not the connection module's services"
 		packages: app: {
 			config: [_cnComline2]
-			schemas: api: (_cnPair & {ops: "@connection = admin\n", chat: "@connection = services\n"}).text
+			schemas: api: (_cnPair & {ops: "@connection = services\n", chat: "@connection = public\n"}).text
 		}
 		build: "app"
-		expect: {builds: false, errors: ["connection::bad-set-name"]}
+		expect: _cnBuilds
+	}
+
+	// A set's generated name is already a name in the package.
+	"name-taken-schema": {
+		about: "a set shop whose generated name shop_connection is the name of a schema is refused (fix: rename the set or the schema)"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: {
+				api:             (_cnPair & {ops: "@connection = shop\n", chat: "@connection = public\n"}).text
+				shop_connection: "struct Item {\n    id: u32\n}"
+			}
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::name-taken"]}
+	}
+	"name-taken-protocol": {
+		about: "a set public whose generated name PublicConnection is the name of a protocol is refused (fix: rename the set or the protocol)"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: api: """
+				@connection = admin
+				protocol Ops {
+				    function restart();
+				}
+
+				@connection = public
+				protocol PublicConnection {
+				    function send();
+				}
+				"""
+		}
+		build: "app"
+		expect: {builds: false, errors: ["connection::name-taken"]}
+	}
+	"name-not-taken": {
+		about: "names that only look like the generated one are no collision: a schema shop_connections and a protocol PublicConn beside the sets shop and public"
+		packages: app: {
+			config: [_cnComline2]
+			schemas: {
+				api: """
+					@connection = shop
+					protocol Ops {
+					    function restart();
+					}
+
+					@connection = public
+					protocol PublicConn {
+					    function send();
+					}
+					"""
+				shop_connections: "struct Item {\n    id: u32\n}"
+			}
+		}
+		build: "app"
+		expect: {builds: true, protocols: {Ops: given_up: [], PublicConn: given_up: []}}
 	}
 
 	// Sets need a handshake that compares protocol by protocol and a framing
